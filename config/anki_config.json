@@ -1,0 +1,22 @@
+{
+  "fields": [
+    "Hiragana/Katakana",
+    "Romaji",
+    "Kanji",
+    "English",
+    "Dutch",
+    "Example sentence hiragana/katakana",
+    "Example sentence kanji",
+    "Example sentence translation",
+    "Extra notes",
+    "Sound"
+  ],
+  "tags": ["word", "phrase", "sentence"],
+  "tagsColumnEnabled": true,
+  "tagsColumnName": "Tags",
+  "sources": [
+    { "label": "Japanese class", "tag": "japanese_class" },
+    { "label": "Other", "tag": "other" }
+  ],
+  "defaultSource": "japanese_class"
+}

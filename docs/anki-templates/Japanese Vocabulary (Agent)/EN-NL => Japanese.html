@@ -1,0 +1,63 @@
+<div class="card production">
+  <div class="translations-front">
+    <div class="translation english">
+      {{English}}
+    </div>
+    <div class="translation dutch">
+      {{Dutch}}
+    </div>
+  </div>
+</div>
+ ```
+<div class="card production">
+  <div class="translations-front faded">
+    <div class="translation english">
+      {{English}}
+    </div>
+    <div class="translation dutch">
+      {{Dutch}}
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="answer-section">
+    <div class="main-word">
+      {{Hiragana/Katakana}}
+    </div>
+
+    {{#Kanji}}
+    <div class="kanji">
+      {{Kanji}}
+    </div>
+    {{/Kanji}}
+
+    <div class="romaji-hint">
+      <span class="hint-label">Romaji:</span> {{Romaji}}
+    </div>
+  </div>
+
+  {{#Sound}}
+  <div class="sound-container">
+    {{Sound}}
+    <button class="replay-btn" onclick="document.querySelector('audio').play()">&#9658; Replay</button>
+  </div>
+  {{/Sound}}
+
+  {{#Example sentence hiragana/katakana}}
+  <div class="example-section">
+    <div class="example-label">Example:</div>
+    <div class="example-japanese">{{Example sentence hiragana/katakana}}</div>
+    {{#Example sentence kanji}}
+    <div class="example-kanji">{{Example sentence kanji}}</div>
+    {{/Example sentence kanji}}
+    <div class="example-translation">{{Example sentence translation}}</div>
+  </div>
+  {{/Example sentence hiragana/katakana}}
+
+  {{#Extra notes}}
+  <div class="notes-section">
+    <span class="notes-label">Notes:</span> {{Extra notes}}
+  </div>
+  {{/Extra notes}}
+</div>

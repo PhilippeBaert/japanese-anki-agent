@@ -1,0 +1,239 @@
+/* Japanese Vocabulary (Agent) - Anki Note Type Styling */
+/* Compatible with Templates Import/Export add-on (712027367) */
+
+/* Base card styling */
+.card {
+  font-family: "Hiragino Sans", "Meiryo", "Noto Sans JP", sans-serif;
+  font-size: 20px;
+  text-align: center;
+  color: #1a1a2e;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Main Japanese word */
+.main-word {
+  font-size: 48px;
+  font-weight: 500;
+  color: #16213e;
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
+/* Kanji display */
+.kanji {
+  font-size: 36px;
+  color: #0f3460;
+  margin-bottom: 15px;
+}
+
+/* Divider line */
+.divider {
+  border: none;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #c4c4c4, transparent);
+  margin: 20px 0;
+}
+
+/* Translation styling */
+.translations, .translations-front {
+  margin: 15px 0;
+}
+
+.translation {
+  font-size: 22px;
+  margin: 8px 0;
+}
+
+.translation.english {
+  color: #2d4059;
+}
+
+.translation.dutch {
+  color: #ea5455;
+}
+
+.lang-label {
+  font-weight: bold;
+  font-size: 14px;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-right: 8px;
+}
+
+.faded {
+  opacity: 0.6;
+}
+
+/* Production card front - larger text */
+.production .translations-front .translation {
+  font-size: 32px;
+  font-weight: 500;
+}
+
+/* Romaji hint */
+.romaji-hint {
+  font-size: 16px;
+  color: #666;
+  font-style: italic;
+  margin: 10px 0;
+}
+
+.hint-label {
+  font-weight: bold;
+  font-style: normal;
+}
+
+/* Example sentence section */
+.example-section {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 12px;
+  padding: 15px;
+  margin: 20px 0;
+  text-align: left;
+}
+
+.example-label {
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.example-japanese {
+  font-size: 24px;
+  color: #16213e;
+  margin-bottom: 5px;
+}
+
+.example-kanji {
+  font-size: 20px;
+  color: #0f3460;
+  margin-bottom: 8px;
+}
+
+.example-translation {
+  font-size: 16px;
+  color: #555;
+  font-style: italic;
+}
+
+/* Notes section */
+.notes-section {
+  background: #fff8e1;
+  border-left: 4px solid #ffc107;
+  padding: 12px;
+  margin: 15px 0;
+  text-align: left;
+  font-size: 16px;
+  border-radius: 0 8px 8px 0;
+}
+
+.notes-label {
+  font-weight: bold;
+  color: #f57c00;
+}
+
+/* Sound/Audio controls */
+.sound-container {
+  margin: 15px 0;
+}
+
+.replay-btn {
+  background: #4a90d9;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.replay-btn:hover {
+  background: #357abd;
+}
+
+.replay-btn:active {
+  background: #2a5f8f;
+}
+
+/* Answer section for production cards */
+.answer-section {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 15px 0;
+}
+
+/* ==================== */
+/* Night Mode Support   */
+/* ==================== */
+
+.nightMode .card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #e8e8e8;
+}
+
+.nightMode .main-word {
+  color: #f0f0f0;
+}
+
+.nightMode .kanji {
+  color: #a8d8ea;
+}
+
+.nightMode .translation.english {
+  color: #a8d8ea;
+}
+
+.nightMode .translation.dutch {
+  color: #ff8a8a;
+}
+
+.nightMode .example-section {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nightMode .example-japanese {
+  color: #f0f0f0;
+}
+
+.nightMode .example-kanji {
+  color: #a8d8ea;
+}
+
+.nightMode .example-translation {
+  color: #b0b0b0;
+}
+
+.nightMode .notes-section {
+  background: rgba(255, 193, 7, 0.2);
+}
+
+.nightMode .notes-label {
+  color: #ffca28;
+}
+
+.nightMode .answer-section {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nightMode .romaji-hint {
+  color: #999;
+}
+
+.nightMode .divider {
+  background: linear-gradient(90deg, transparent, #555, transparent);
+}
+
+.nightMode .replay-btn {
+  background: #3a7bc8;
+}
+
+.nightMode .replay-btn:hover {
+  background: #4a8bd8;
+}

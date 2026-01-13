@@ -1,0 +1,68 @@
+<div class="card recognition">
+  <div class="main-word">
+    {{Hiragana/Katakana}}
+  </div>
+
+  {{#Kanji}}
+  <div class="kanji">
+    {{Kanji}}
+  </div>
+  {{/Kanji}}
+
+  {{#Sound}}
+  <div class="sound-container">
+    {{Sound}}
+    <button class="replay-btn" onclick="document.querySelector('audio').play()">&#9658; Replay</button>
+  </div>
+  {{/Sound}}
+</div>
+ ```
+<div class="card recognition">
+  <div class="main-word">
+    {{Hiragana/Katakana}}
+  </div>
+
+  {{#Kanji}}
+  <div class="kanji">
+    {{Kanji}}
+  </div>
+  {{/Kanji}}
+
+  {{#Sound}}
+  <div class="sound-container">
+    <button class="replay-btn" onclick="document.querySelector('audio').play()">&#9658; Replay</button>
+  </div>
+  {{/Sound}}
+
+  <hr class="divider">
+
+  <div class="translations">
+    <div class="translation english">
+      <span class="lang-label">EN:</span> {{English}}
+    </div>
+    <div class="translation dutch">
+      <span class="lang-label">NL:</span> {{Dutch}}
+    </div>
+  </div>
+
+  <div class="romaji-hint">
+    <span class="hint-label">Romaji:</span> {{Romaji}}
+  </div>
+
+  {{#Example sentence hiragana/katakana}}
+  <div class="example-section">
+    <div class="example-label">Example:</div>
+    <div class="example-japanese">{{Example sentence hiragana/katakana}}</div>
+    {{#Example sentence kanji}}
+    <div class="example-kanji">{{Example sentence kanji}}</div>
+    {{/Example sentence kanji}}
+    <div class="example-translation">{{Example sentence translation}}</div>
+  </div>
+  {{/Example sentence hiragana/katakana}}
+
+  {{#Extra notes}}
+  <div class="notes-section">
+    <span class="notes-label">Notes:</span> {{Extra notes}}
+  </div>
+  {{/Extra notes}}
+</div>

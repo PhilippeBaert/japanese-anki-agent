@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# Python
+backend/venv
+backend/__pycache__
+backend/**/__pycache__
+backend/*.pyc
+backend/.pytest_cache
+backend/.coverage
+backend/htmlcov
+
+# Node
+frontend/node_modules
+frontend/.next
+frontend/.swc
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Environment files (secrets)
+.env
+.env.local
+backend/.env
+frontend/.env.local
+
+# Documentation
+*.md
+!README.md
+
+# Local development
+.pids
+scripts/
+
+# Unraid template (not needed in image)
+unraid/
+
+# Plans
+.claude/
