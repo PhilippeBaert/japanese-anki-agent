@@ -20,6 +20,7 @@ export interface GeneratedCard {
   // Frontend-only tracking fields
   originalType?: CardType;
   isRegenerating?: boolean;
+  isCore?: boolean; // true = Core (priority), false = Extra (supplementary)
 }
 
 export interface AnkiConfig {
@@ -58,4 +59,30 @@ export interface RegenerateCardRequest {
   fixed_dutch?: string;
   extra_notes?: string;
   target_type: CardType;
+}
+
+// Migration types
+export interface DeckInfo {
+  name: string;
+  note_count: number;
+}
+
+export interface MigrationNote {
+  note_id: number;
+  old_fields: Record<string, string>;
+  sound: string;
+  sound_example: string;
+}
+
+export interface PreviewResponse {
+  note_id: number;
+  new_fields: Record<string, string>;
+  auto_classified_type: CardType;
+}
+
+export interface MigrationNoteState {
+  note: MigrationNote;
+  preview: PreviewResponse | null;
+  status: 'pending' | 'previewing' | 'ready' | 'approving' | 'approved' | 'skipped' | 'error';
+  error?: string;
 }

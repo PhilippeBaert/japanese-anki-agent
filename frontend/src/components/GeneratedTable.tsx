@@ -18,6 +18,7 @@ interface TableRowProps {
   onUpdateField: (cardIndex: number, field: string, value: string) => void;
   onTypeChange: (cardIndex: number, newType: CardType) => Promise<void>;
   onRemove: (cardIndex: number) => void;
+  onToggleCore: (cardIndex: number) => void;
 }
 
 const TableRow = memo(function TableRow({
@@ -33,13 +34,14 @@ const TableRow = memo(function TableRow({
   onUpdateField,
   onTypeChange,
   onRemove,
+  onToggleCore,
 }: TableRowProps) {
   const originalType = card.originalType || card.autoClassifiedType;
   const showRerunIndicator = originalType !== card.autoClassifiedType &&
     needsRegeneration(originalType, card.autoClassifiedType);
 
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className={`hover:bg-gray-50 ${card.isCore ? 'bg-yellow-50' : ''}`}>
       <td className="px-3 py-2 text-sm text-gray-500">{cardIndex + 1}</td>
       <td className="px-3 py-2">
         <CardTypeTag
@@ -94,16 +96,27 @@ const TableRow = memo(function TableRow({
         );
       })}
       <td className="px-3 py-2">
-        <button
-          type="button"
-          onClick={() => onRemove(cardIndex)}
-          className="text-red-500 hover:text-red-700 text-sm"
-          disabled={cardsLength <= 1}
-          aria-label={`Remove card ${cardIndex + 1}`}
-          aria-disabled={cardsLength <= 1}
-        >
-          Remove
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onToggleCore(cardIndex)}
+            className="text-xl hover:scale-110 transition-transform"
+            aria-label={card.isCore ? 'Remove from Core (mark as Extra)' : 'Mark as Core priority'}
+            title={card.isCore ? 'Core - click to mark as Extra' : 'Extra - click to mark as Core'}
+          >
+            {card.isCore ? '⭐' : '☆'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onRemove(cardIndex)}
+            className="text-red-500 hover:text-red-700 text-sm"
+            disabled={cardsLength <= 1}
+            aria-label={`Remove card ${cardIndex + 1}`}
+            aria-disabled={cardsLength <= 1}
+          >
+            Remove
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -178,12 +191,21 @@ export function GeneratedTable({
     }
   }, [removeCard]);
 
+  const handleToggleCore = useCallback((cardIndex: number) => {
+    const newCards = [...cards];
+    newCards[cardIndex] = {
+      ...newCards[cardIndex],
+      isCore: !newCards[cardIndex].isCore,
+    };
+    onCardsChange(newCards);
+  }, [cards, onCardsChange]);
+
   const addEmptyCard = useCallback(() => {
     const emptyFields: Record<string, string> = {};
     fields.forEach(field => {
       emptyFields[field] = '';
     });
-    onCardsChange([...cards, { fields: emptyFields, tags: ['word'], autoClassifiedType: 'word' }]);
+    onCardsChange([...cards, { fields: emptyFields, tags: ['word'], autoClassifiedType: 'word', isCore: true }]);
   }, [cards, fields, onCardsChange]);
 
   const handleCellClick = useCallback((cardIndex: number, field: string) => {
@@ -241,6 +263,7 @@ export function GeneratedTable({
                 onUpdateField={updateField}
                 onTypeChange={handleTypeChange}
                 onRemove={handleRemove}
+                onToggleCore={handleToggleCore}
               />
             ))}
           </tbody>

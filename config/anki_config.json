@@ -9,7 +9,8 @@
     "Example sentence kanji",
     "Example sentence translation",
     "Extra notes",
-    "Sound"
+    "Sound",
+    "Sound example"
   ],
   "tags": ["word", "phrase", "sentence"],
   "tagsColumnEnabled": true,

@@ -42,8 +42,13 @@ RATE_LIMITS = {
     # Strict limits for Claude API endpoints to prevent abuse
     "/api/generate": 10,
     "/api/regenerate-card": 10,
+    "/api/migrate/preview": 10,  # Also uses Claude
     # More permissive limits for config and health endpoints
     "/api/config": 60,
+    "/api/migrate/decks": 60,
+    "/api/migrate/notes": 60,
+    "/api/migrate/check-connection": 60,
+    "/api/migrate/approve": 30,
     "/health": 60,
 }
 DEFAULT_RATE_LIMIT = 30  # Default for unlisted endpoints
@@ -163,6 +168,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "X-API-Key"],
+    expose_headers=["Content-Disposition"],
 )
 
 # Rate limiting middleware - applied after CORS to ensure proper handling
@@ -172,10 +178,12 @@ app.add_middleware(RateLimitMiddleware)
 from .routes import config as config_router
 from .routes import generate as generate_router
 from .routes import export as export_router
+from .routes import migrate as migrate_router
 
 app.include_router(config_router.router, prefix="/api", tags=["config"])
 app.include_router(generate_router.router, prefix="/api", tags=["generate"])
 app.include_router(export_router.router, prefix="/api", tags=["export"])
+app.include_router(migrate_router.router, prefix="/api")  # Already has prefix and tags
 
 
 @app.get("/health")

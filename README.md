@@ -174,7 +174,7 @@ Before importing cards, you need to create a matching note type in Anki. There a
    - Click Fields and create (in order):
      - `Hiragana/Katakana`, `Romaji`, `Kanji`, `English`, `Dutch`
      - `Example sentence hiragana/katakana`, `Example sentence kanji`
-     - `Example sentence translation`, `Extra notes`, `Sound`
+     - `Example sentence translation`, `Extra notes`, `Sound`, `Sound example`
 
 3. **Import templates:**
    - Copy `docs/anki-templates/` folder from this repo
@@ -207,7 +207,8 @@ The configuration file defines the fields and tags available for card generation
     "Example sentence kanji",
     "Example sentence translation",
     "Extra notes",
-    "Sound"
+    "Sound",
+    "Sound example"
   ],
   "tags": ["word", "phrase", "sentence"],
   "tagsColumnEnabled": true,

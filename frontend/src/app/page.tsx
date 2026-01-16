@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { DraftCardList } from '@/components/DraftCardList';
+import { DraftCardActions } from '@/components/DraftCardActions';
 import { GeneratedTable } from '@/components/GeneratedTable';
 import { ExportButton } from '@/components/ExportButton';
 import { useAnkiAgent } from '@/hooks/useAnkiAgent';
@@ -23,10 +25,13 @@ export default function Home() {
     handleExport,
     handleBackToDraft,
     handleRegenerateCard,
+    handleExportDraftsJSON,
+    handleImportDraftsJSON,
     isGenerating,
     isExporting,
     generateError,
     exportError,
+    importError,
   } = useAnkiAgent();
 
   if (configLoading) {
@@ -51,7 +56,15 @@ export default function Home() {
 
   return (
     <main className="mx-auto px-4 py-8 lg:px-8 max-w-7xl 2xl:max-w-none">
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Japanese Anki Agent</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-3xl font-bold text-gray-800">Japanese Anki Agent</h1>
+        <Link
+          href="/migrate"
+          className="text-sm text-blue-600 hover:text-blue-800 underline"
+        >
+          Migrate Old Notes
+        </Link>
+      </div>
       <p className="text-gray-600 mb-6">
         Generate Japanese Anki flashcards with AI assistance
       </p>
@@ -100,7 +113,20 @@ export default function Home() {
         <>
           {/* Draft Cards View */}
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-700 mb-4">Draft Cards</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-700">Draft Cards</h2>
+              <DraftCardActions
+                onExport={handleExportDraftsJSON}
+                onImport={handleImportDraftsJSON}
+                hasCards={draftCards.some(c =>
+                  c.rawInput.trim() ||
+                  c.fixedEnglish.trim() ||
+                  c.fixedDutch.trim() ||
+                  c.extraNotes.trim()
+                )}
+                importError={importError}
+              />
+            </div>
             <DraftCardList
               cards={draftCards}
               onCardsChange={setDraftCards}

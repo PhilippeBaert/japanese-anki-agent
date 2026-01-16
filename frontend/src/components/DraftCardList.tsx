@@ -1,7 +1,8 @@
 'use client';
 
+import { useRef, useEffect, useCallback } from 'react';
 import { DraftCard } from '@/types';
-import { DraftCardForm } from './DraftCardForm';
+import { DraftCardForm, DraftCardFormHandle } from './DraftCardForm';
 
 interface DraftCardListProps {
   cards: DraftCard[];
@@ -9,6 +10,9 @@ interface DraftCardListProps {
 }
 
 export function DraftCardList({ cards, onCardsChange }: DraftCardListProps) {
+  const cardRefs = useRef<Map<string, DraftCardFormHandle>>(new Map());
+  const pendingFocusId = useRef<string | null>(null);
+
   const createEmptyCard = (): DraftCard => ({
     id: crypto.randomUUID(),
     rawInput: '',
@@ -16,6 +20,16 @@ export function DraftCardList({ cards, onCardsChange }: DraftCardListProps) {
     fixedDutch: '',
     extraNotes: '',
   });
+
+  useEffect(() => {
+    if (pendingFocusId.current) {
+      const ref = cardRefs.current.get(pendingFocusId.current);
+      if (ref) {
+        ref.focusInput();
+        pendingFocusId.current = null;
+      }
+    }
+  }, [cards]);
 
   const updateCard = (index: number, card: DraftCard) => {
     const newCards = [...cards];
@@ -31,16 +45,30 @@ export function DraftCardList({ cards, onCardsChange }: DraftCardListProps) {
     onCardsChange([...cards, createEmptyCard()]);
   };
 
+  const addCardAndFocus = useCallback(() => {
+    const newCard = createEmptyCard();
+    pendingFocusId.current = newCard.id;
+    onCardsChange([...cards, newCard]);
+  }, [cards, onCardsChange]);
+
   return (
     <div className="space-y-4">
       {cards.map((card, index) => (
         <DraftCardForm
           key={card.id}
+          ref={el => {
+            if (el) {
+              cardRefs.current.set(card.id, el);
+            } else {
+              cardRefs.current.delete(card.id);
+            }
+          }}
           card={card}
           index={index}
           onChange={updatedCard => updateCard(index, updatedCard)}
           onRemove={() => removeCard(index)}
           canRemove={cards.length > 1}
+          onAddCardAfter={addCardAndFocus}
         />
       ))}
 

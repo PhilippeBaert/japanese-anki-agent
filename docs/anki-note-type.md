@@ -31,7 +31,7 @@ The easiest way to set up this note type is using the **Templates Import/Export*
 4. Click **Fields** and create fields in this exact order:
    - Rename "Front" to `Hiragana/Katakana`
    - Rename "Back" to `Romaji`
-   - Add: `Kanji`, `English`, `Dutch`, `Example sentence hiragana/katakana`, `Example sentence kanji`, `Example sentence translation`, `Extra notes`, `Sound`
+   - Add: `Kanji`, `English`, `Dutch`, `Example sentence hiragana/katakana`, `Example sentence kanji`, `Example sentence translation`, `Extra notes`, `Sound`, `Sound example`
 
 ### Step 3: Import Templates
 
@@ -74,7 +74,8 @@ Create these fields in **exact order** (matches CSV export):
 | 7 | Example sentence kanji | Example in kanji |
 | 8 | Example sentence translation | Example translation |
 | 9 | Extra notes | Additional context |
-| 10 | Sound | Audio file reference |
+| 10 | Sound | Audio file reference for word/phrase |
+| 11 | Sound example | Audio file reference for example sentence |
 
 ### Setting Up Fields
 
@@ -106,7 +107,6 @@ This card tests **recognition** - seeing Japanese and recalling the meaning.
   {{#Sound}}
   <div class="sound-container">
     {{Sound}}
-    <button class="replay-btn" onclick="document.querySelector('audio').play()">&#9658; Replay</button>
   </div>
   {{/Sound}}
 </div>
@@ -128,7 +128,7 @@ This card tests **recognition** - seeing Japanese and recalling the meaning.
 
   {{#Sound}}
   <div class="sound-container">
-    <button class="replay-btn" onclick="document.querySelector('audio').play()">&#9658; Replay</button>
+    {{Sound}}
   </div>
   {{/Sound}}
 
@@ -155,6 +155,11 @@ This card tests **recognition** - seeing Japanese and recalling the meaning.
     <div class="example-kanji">{{Example sentence kanji}}</div>
     {{/Example sentence kanji}}
     <div class="example-translation">{{Example sentence translation}}</div>
+    {{#Sound example}}
+    <div class="sound-container example-sound">
+      {{Sound example}}
+    </div>
+    {{/Sound example}}
   </div>
   {{/Example sentence hiragana/katakana}}
 
@@ -221,7 +226,6 @@ This card tests **production** - seeing the meaning and recalling the Japanese.
   {{#Sound}}
   <div class="sound-container">
     {{Sound}}
-    <button class="replay-btn" onclick="document.querySelector('audio').play()">&#9658; Replay</button>
   </div>
   {{/Sound}}
 
@@ -233,6 +237,11 @@ This card tests **production** - seeing the meaning and recalling the Japanese.
     <div class="example-kanji">{{Example sentence kanji}}</div>
     {{/Example sentence kanji}}
     <div class="example-translation">{{Example sentence translation}}</div>
+    {{#Sound example}}
+    <div class="sound-container example-sound">
+      {{Sound example}}
+    </div>
+    {{/Sound example}}
   </div>
   {{/Example sentence hiragana/katakana}}
 
@@ -302,7 +311,7 @@ Paste this into the **Styling** section of the card template editor:
 }
 
 .translation.dutch {
-  color: #ea5455;
+  color: #2a9d8f;
 }
 
 .lang-label {
@@ -392,23 +401,60 @@ Paste this into the **Styling** section of the card template editor:
   margin: 15px 0;
 }
 
-.replay-btn {
+/* Hide Anki's native audio icon */
+.playImage {
+  display: none;
+}
+
+/* Style the clickable sound link as our custom button */
+.soundLink {
+  display: inline-block;
   background: #4a90d9;
   color: white;
-  border: none;
   padding: 10px 20px;
   border-radius: 25px;
   font-size: 16px;
+  text-decoration: none;
   cursor: pointer;
   transition: background 0.2s;
 }
 
-.replay-btn:hover {
+.soundLink:hover {
   background: #357abd;
 }
 
-.replay-btn:active {
+.soundLink:active {
   background: #2a5f8f;
+}
+
+/* Add play icon before text */
+.soundLink::before {
+  content: "\25B6  Play";
+}
+
+/* Example sentence sound - different styling */
+.example-sound {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(0,0,0,0.1);
+}
+
+.example-sound .soundLink {
+  background: #5cb85c;
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+.example-sound .soundLink::before {
+  content: "\25B6  Play Example";
+}
+
+.example-sound .soundLink:hover {
+  background: #4cae4c;
+}
+
+.example-sound .soundLink:active {
+  background: #449d44;
 }
 
 /* Answer section for production cards */
@@ -438,7 +484,7 @@ Paste this into the **Styling** section of the card template editor:
 }
 
 .nightMode .translation.dutch {
-  color: #ff8a8a;
+  color: #5eead4;
 }
 
 .nightMode .example-section {
@@ -459,6 +505,35 @@ Paste this into the **Styling** section of the card template editor:
 
 .nightMode .answer-section {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.nightMode .romaji-hint {
+  color: #999;
+}
+
+.nightMode .divider {
+  background: linear-gradient(90deg, transparent, #555, transparent);
+}
+
+/* Night mode sound buttons */
+.nightMode .soundLink {
+  background: #3a7bc8;
+}
+
+.nightMode .soundLink:hover {
+  background: #4a8bd8;
+}
+
+.nightMode .example-sound .soundLink {
+  background: #4a9b4a;
+}
+
+.nightMode .example-sound .soundLink:hover {
+  background: #5aab5a;
+}
+
+.nightMode .example-sound {
+  border-top-color: rgba(255,255,255,0.1);
 }
 ```
 
@@ -485,7 +560,7 @@ When importing CSV files from the Japanese Anki Agent:
 2. Select your CSV file
 3. Choose **Japanese Vocabulary (Agent)** as the note type
 4. Anki will automatically read the `#columns:` directive and map fields
-5. The `#tags column:11` directive handles tag import automatically
+5. The `#tags column:12` directive handles tag import automatically
 
 ### CSV Format Reference
 
@@ -493,8 +568,8 @@ The agent exports in this format:
 ```
 #separator:Comma
 #html:false
-#columns:Hiragana/Katakana,Romaji,Kanji,English,Dutch,Example sentence hiragana/katakana,Example sentence kanji,Example sentence translation,Extra notes,Sound
-#tags column:11
+#columns:Hiragana/Katakana,Romaji,Kanji,English,Dutch,Example sentence hiragana/katakana,Example sentence kanji,Example sentence translation,Extra notes,Sound,Sound example
+#tags column:12
 "word1","romaji1","kanji1",...
 ```
 
@@ -502,11 +577,16 @@ The agent exports in this format:
 
 ## Audio Setup
 
+There are two audio fields:
+- **Sound**: Word/phrase audio (auto-plays)
+- **Sound example**: Example sentence audio (play via button)
+
 When the Sound field contains audio (format: `[sound:filename.mp3]`):
 
-1. Audio auto-plays when the card front is shown (Card 1)
-2. Audio auto-plays when answer is revealed (Card 2)
-3. Click the **Replay** button to play again
+1. Audio auto-plays when the card front is shown (Card 1 - Japanese => EN/NL)
+2. Audio auto-plays when answer is revealed (Card 2 - EN/NL => Japanese)
+3. Click the **Replay Word** button to play the word audio again
+4. Click the **Play Example** button to play the example sentence audio (only appears when Sound example field is populated)
 
 ### Adding Audio Files
 
@@ -541,7 +621,7 @@ Place audio files in your Anki media folder:
 ## Design Features
 
 - **48px Japanese text** for easy reading
-- **Color-coded translations**: Blue (English), Red (Dutch)
+- **Color-coded translations**: Blue (English), Teal (Dutch)
 - **Conditional display**: Kanji, sound, examples, and notes only show when populated
 - **Night mode**: Full dark theme support
 - **Replay button**: Styled audio control

@@ -12,7 +12,6 @@
   {{#Sound}}
   <div class="sound-container">
     {{Sound}}
-    <button class="replay-btn" onclick="document.querySelector('audio').play()">&#9658; Replay</button>
   </div>
   {{/Sound}}
 </div>
@@ -30,7 +29,7 @@
 
   {{#Sound}}
   <div class="sound-container">
-    <button class="replay-btn" onclick="document.querySelector('audio').play()">&#9658; Replay</button>
+    {{Sound}}
   </div>
   {{/Sound}}
 
@@ -57,6 +56,11 @@
     <div class="example-kanji">{{Example sentence kanji}}</div>
     {{/Example sentence kanji}}
     <div class="example-translation">{{Example sentence translation}}</div>
+    {{#Sound example}}
+    <div class="sound-container example-sound">
+      {{Sound example}}
+    </div>
+    {{/Sound example}}
   </div>
   {{/Example sentence hiragana/katakana}}
 

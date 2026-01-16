@@ -64,3 +64,11 @@ class RegenerateCardRequest(BaseModel):
     fixed_dutch: Optional[str] = Field(None, max_length=2000, description="Optional fixed Dutch translation")
     extra_notes: Optional[str] = Field(None, max_length=2000, description="Optional extra notes")
     target_type: CardType = Field(..., description="The target card type (word/phrase/sentence)")
+
+
+class ExportWithPriorityRequest(BaseModel):
+    """Request to export cards split by core/extra priority"""
+    core_cards: list[GeneratedCard] = Field(default_factory=list, max_length=1000)
+    extra_cards: list[GeneratedCard] = Field(default_factory=list, max_length=1000)
+    filename: str = Field(..., min_length=1, max_length=255)
+    source: Optional[str] = Field(None, max_length=50, description="Source tag to prepend to all cards")

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { DraftCard, GeneratedCard, AnkiConfig, CardType } from '@/types';
-import { fetchConfig, generateCards, exportCSV, regenerateCard } from '@/lib/api';
+import { fetchConfig, generateCards, exportCSVWithPriority, regenerateCard } from '@/lib/api';
 
 type View = 'draft' | 'generated';
 
@@ -37,6 +37,8 @@ interface UseAnkiAgentReturn {
   handleExport: () => Promise<void>;
   handleBackToDraft: () => void;
   handleRegenerateCard: (cardIndex: number, targetType: CardType) => Promise<void>;
+  handleExportDraftsJSON: () => void;
+  handleImportDraftsJSON: (file: File) => Promise<void>;
 
   // Loading states
   isGenerating: boolean;
@@ -45,6 +47,7 @@ interface UseAnkiAgentReturn {
   // Errors
   generateError: string | null;
   exportError: string | null;
+  importError: string | null;
 }
 
 function createEmptyDraftCard(): DraftCard {
@@ -88,6 +91,7 @@ export function useAnkiAgent(): UseAnkiAgentReturn {
   // Errors
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Load config on mount
   useEffect(() => {
@@ -148,6 +152,7 @@ export function useAnkiAgent(): UseAnkiAgentReturn {
         tags: card.tags,
         autoClassifiedType: card.auto_classified_type || 'word',
         originalType: card.auto_classified_type || 'word',
+        isCore: true, // Default: all cards are Core (priority)
       }));
 
       setGeneratedCards(cardsWithTracking);
@@ -160,7 +165,7 @@ export function useAnkiAgent(): UseAnkiAgentReturn {
     }
   }, [config, draftCards, filename]);
 
-  // Export to CSV
+  // Export to CSV (split by Core/Extra priority)
   const handleExport = useCallback(async () => {
     if (generatedCards.length === 0) {
       setExportError('No cards to export');
@@ -171,17 +176,22 @@ export function useAnkiAgent(): UseAnkiAgentReturn {
     setExportError(null);
 
     try {
-      const blob = await exportCSV({
-        cards: generatedCards,
+      // Split cards by priority
+      const coreCards = generatedCards.filter(card => card.isCore);
+      const extraCards = generatedCards.filter(card => !card.isCore);
+
+      const result = await exportCSVWithPriority({
+        coreCards,
+        extraCards,
         filename: filename || 'anki_cards',
         source: source || undefined,
       });
 
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
+      // Create download link (works for both ZIP and single CSV)
+      const url = window.URL.createObjectURL(result.blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${filename || 'anki_cards'}.csv`;
+      a.download = result.filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -243,6 +253,100 @@ export function useAnkiAgent(): UseAnkiAgentReturn {
     }
   }, [originalDrafts]);
 
+  // Export draft cards to JSON
+  const handleExportDraftsJSON = useCallback(() => {
+    // Filter out completely empty cards
+    const cardsToExport = draftCards.filter(card =>
+      card.rawInput.trim() ||
+      card.fixedEnglish.trim() ||
+      card.fixedDutch.trim() ||
+      card.extraNotes.trim()
+    );
+
+    if (cardsToExport.length === 0) {
+      return; // Nothing to export
+    }
+
+    // Create export data structure (without internal IDs)
+    const exportData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      cards: cardsToExport.map(card => ({
+        rawInput: card.rawInput,
+        fixedEnglish: card.fixedEnglish,
+        fixedDutch: card.fixedDutch,
+        extraNotes: card.extraNotes,
+      })),
+    };
+
+    // Create and trigger download
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: 'application/json'
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `draft-cards-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }, [draftCards]);
+
+  // Import draft cards from JSON
+  const handleImportDraftsJSON = useCallback(async (file: File) => {
+    setImportError(null);
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      // Validate structure
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid JSON structure');
+      }
+
+      // Check for cards array
+      if (!Array.isArray(data.cards)) {
+        throw new Error('JSON must contain a "cards" array');
+      }
+
+      // Validate and transform each card
+      const importedCards: DraftCard[] = data.cards.map((card: unknown, index: number) => {
+        if (!card || typeof card !== 'object') {
+          throw new Error(`Invalid card at index ${index}`);
+        }
+
+        const c = card as Record<string, unknown>;
+
+        // rawInput is required
+        if (typeof c.rawInput !== 'string') {
+          throw new Error(`Card at index ${index} missing required "rawInput" field`);
+        }
+
+        return {
+          id: crypto.randomUUID(),
+          rawInput: c.rawInput,
+          fixedEnglish: typeof c.fixedEnglish === 'string' ? c.fixedEnglish : '',
+          fixedDutch: typeof c.fixedDutch === 'string' ? c.fixedDutch : '',
+          extraNotes: typeof c.extraNotes === 'string' ? c.extraNotes : '',
+        };
+      });
+
+      if (importedCards.length === 0) {
+        throw new Error('No valid cards found in file');
+      }
+
+      setDraftCards(importedCards);
+    } catch (err) {
+      if (err instanceof SyntaxError) {
+        setImportError('Invalid JSON file format');
+      } else {
+        setImportError(err instanceof Error ? err.message : 'Import failed');
+      }
+    }
+  }, []);
+
   return {
     config,
     configLoading,
@@ -261,9 +365,12 @@ export function useAnkiAgent(): UseAnkiAgentReturn {
     handleExport,
     handleBackToDraft,
     handleRegenerateCard,
+    handleExportDraftsJSON,
+    handleImportDraftsJSON,
     isGenerating,
     isExporting,
     generateError,
     exportError,
+    importError,
   };
 }

@@ -86,6 +86,46 @@ Generate complete Anki flashcard data for each input provided below.
   - Keep katakana words in katakana, everything else in hiragana
   - Examples: "オランダ に すんでいます。" or "ふつう でんしゃ で いきます。"
 
+### D.1) SPACING RULES FOR KANA FIELDS (CRITICAL)
+Use spaces to separate logical units for readability. Follow these rules:
+
+**ADD SPACE BEFORE:**
+- Particles: は、が、を、に、で、と、も、へ、から、まで、より、など
+  - Example: "わたし は ほん を よみます。" (I read a book)
+  - Example: "がっこう に いきます。" (I go to school)
+
+**DO NOT ADD SPACE (keep attached):**
+- Verb endings and suffixes: ます、ません、ました、ている、てください、たい、ない
+  - Correct: "たべます" NOT "たべ ます"
+  - Correct: "よんでいます" NOT "よんで います"
+  - Correct: "いきたい" NOT "いき たい"
+- Numbers + counters: stay together
+  - Correct: "3にん" NOT "3 にん"
+  - Correct: "9じ" NOT "9 じ"
+- Compound verbs: stay together
+  - Correct: "もってきます" NOT "もって きます"
+
+**SEPARATE WITH SPACE:**
+- Nouns from other nouns: "わたし の ともだち"
+- Adjectives from nouns: "おおきい いぬ" (big dog)
+- Adverbs from verbs: "はやく たべます" (eat quickly)
+- Multiple adjectives: "あかい おおきい くるま" (red big car)
+
+**SPACING EXAMPLES:**
+- "きょう は 9じ に ねます。" (Today I sleep at 9)
+- "わたし の ともだち は オランダ に すんでいます。" (My friend lives in the Netherlands)
+- "おおきい いぬ が います。" (There is a big dog)
+- "ほん を よんでいます。" (I am reading a book)
+
+**FOR PHRASE-TYPE CARDS - MAIN KANA FIELD:**
+- The spacing rules above ALSO apply to the main "Hiragana/Katakana" field for phrase-type cards
+- Separate distinct words/components with spaces, even without particles
+- Examples:
+  - "akemashite omedetou" → "あけまして おめでとう" (NOT "あけましておめでとう")
+  - "ohayou gozaimasu" → "おはよう ございます"
+  - "yoroshiku onegaishimasu" → "よろしく おねがいします"
+- This makes phrases readable and shows word boundaries clearly
+
 ### E) Kanji Fields
 - "Kanji" field:
   - Provide the standard kanji spelling if one exists
@@ -114,9 +154,13 @@ Generate complete Anki flashcard data for each input provided below.
 ### G) Translation Rules with Fixed Translations
 - Generate both English and Dutch translations
 - If user provided a fixed translation:
-  - Place the fixed term FIRST, add asterisk * at the end
+  - Fix any typos or spelling errors in the fixed translation
+  - Ensure proper capitalization (start with capital letter)
+  - For full sentence translations: ensure they end with a period
+  - For single words/phrases: no period needed
+  - Place the (corrected) fixed term FIRST, add asterisk * at the end
   - Then add agent's additional translations after, comma-separated
-  - Example: fixed Dutch "juist-teken" → "juist-teken*, correct teken, cirkel"
+  - Example: fixed Dutch "juist-teken" → "Juist-teken*, correct teken, cirkel"
 - ONLY add * if user explicitly provided that translation
 - If user only fixed Dutch but not English, generate English normally WITHOUT *
 
@@ -147,11 +191,20 @@ When the input is a VERB (single word), handle the form as follows:
 - "Example sentence translation" must be in ENGLISH
 
 ### J) Extra Notes
+- You MAY add extra notes even if user didn't provide any, if helpful information exists (e.g., literal translations, alternative expressions, usage notes)
 - If user provided extra notes, rewrite them into clear, concise English
-- Keep them brief
+- Fix any typos or spelling errors
+- Ensure proper formatting:
+  - Each sentence starts with a capital letter
+  - Each sentence ends with a period
+- Use newlines (\\n) to separate distinct pieces of information, for example:
+  - Literal translation on one line, alternative expression on another
+  - Example: "Literally: \\"As for pencils, I have one.\\"\\n\\"Hitotsu no enpitsu ga arimasu\\" can also be used."
+- Keep notes helpful but concise
 
-### K) Sound Field
-- Leave the "Sound" field empty
+### K) Sound Fields
+- Leave the "Sound" field empty (word/phrase audio added manually)
+- Leave the "Sound example" field empty (sentence audio added manually)
 
 ## Input Cards to Process:
 
@@ -172,7 +225,8 @@ Respond with ONLY valid JSON in this exact structure:
         "Example sentence kanji": "...",
         "Example sentence translation": "...",
         "Extra notes": "...",
-        "Sound": ""
+        "Sound": "",
+        "Sound example": ""
       }},
       "tags": ["word"],
       "auto_classified_type": "word"

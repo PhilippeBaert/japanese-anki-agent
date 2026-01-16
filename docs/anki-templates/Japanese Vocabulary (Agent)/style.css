@@ -52,7 +52,7 @@
 }
 
 .translation.dutch {
-  color: #ea5455;
+  color: #2a9d8f;
 }
 
 .lang-label {
@@ -137,28 +137,68 @@
   color: #f57c00;
 }
 
+/* ==================== */
 /* Sound/Audio controls */
+/* ==================== */
+
 .sound-container {
   margin: 15px 0;
 }
 
-.replay-btn {
+/* Hide Anki's native audio icon */
+.playImage {
+  display: none;
+}
+
+/* Style the clickable sound link as our custom button */
+.soundLink {
+  display: inline-block;
   background: #4a90d9;
   color: white;
-  border: none;
   padding: 10px 20px;
   border-radius: 25px;
   font-size: 16px;
+  text-decoration: none;
   cursor: pointer;
   transition: background 0.2s;
 }
 
-.replay-btn:hover {
+.soundLink:hover {
   background: #357abd;
 }
 
-.replay-btn:active {
+.soundLink:active {
   background: #2a5f8f;
+}
+
+/* Add play icon before text */
+.soundLink::before {
+  content: "\25B6  Play";
+}
+
+/* Example sentence sound - different styling */
+.example-sound {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(0,0,0,0.1);
+}
+
+.example-sound .soundLink {
+  background: #5cb85c;
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+.example-sound .soundLink::before {
+  content: "\25B6  Play Example";
+}
+
+.example-sound .soundLink:hover {
+  background: #4cae4c;
+}
+
+.example-sound .soundLink:active {
+  background: #449d44;
 }
 
 /* Answer section for production cards */
@@ -191,7 +231,7 @@
 }
 
 .nightMode .translation.dutch {
-  color: #ff8a8a;
+  color: #5eead4;
 }
 
 .nightMode .example-section {
@@ -230,10 +270,23 @@
   background: linear-gradient(90deg, transparent, #555, transparent);
 }
 
-.nightMode .replay-btn {
+/* Night mode sound buttons */
+.nightMode .soundLink {
   background: #3a7bc8;
 }
 
-.nightMode .replay-btn:hover {
+.nightMode .soundLink:hover {
   background: #4a8bd8;
+}
+
+.nightMode .example-sound .soundLink {
+  background: #4a9b4a;
+}
+
+.nightMode .example-sound .soundLink:hover {
+  background: #5aab5a;
+}
+
+.nightMode .example-sound {
+  border-top-color: rgba(255,255,255,0.1);
 }
