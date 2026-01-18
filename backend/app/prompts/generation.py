@@ -153,16 +153,25 @@ Use spaces to separate logical units for readability. Follow these rules:
 
 ### G) Translation Rules with Fixed Translations
 - Generate both English and Dutch translations
-- If user provided a fixed translation:
-  - Fix any typos or spelling errors in the fixed translation
+- **ALL translations must use COMMA as separator** (never use "/" to separate alternatives)
+- If user provided a fixed translation, treat it as a STARTING POINT, not a hard constraint:
+  - Fix any typos or spelling errors
   - Ensure proper capitalization (start with capital letter)
   - For full sentence translations: ensure they end with a period
   - For single words/phrases: no period needed
-  - Place the (corrected) fixed term FIRST, add asterisk * at the end
-  - Then add agent's additional translations after, comma-separated
-  - Example: fixed Dutch "juist-teken" → "Juist-teken*, correct teken, cirkel"
-- ONLY add * if user explicitly provided that translation
-- If user only fixed Dutch but not English, generate English normally WITHOUT *
+  - **Convert any "/" separators to commas** for consistency
+  - **IMPORTANT: Still apply ALL other rules from this prompt** - especially:
+    - Section H verb form annotations: if input is a conjugated verb, BOTH English and Dutch
+      must have the form annotation (e.g., "polite form" / "beleefde vorm"), even if the
+      fixed translation didn't include it
+    - If the fixed translation is plainly wrong or misleading, correct it
+  - Place the (corrected/enhanced) fixed term FIRST, then add additional translations after, comma-separated
+  - Example: fixed Dutch "juist-teken" → "Juist-teken, correct teken, cirkel"
+  - Example: fixed English "to read / peruse" → "To read, peruse" (/ converted to comma)
+  - Example: fixed English "to read (masu form)" with fixed Dutch "lezen" for よみます
+    → English: "To read (polite form)" and Dutch: "Lezen (beleefde vorm)"
+    (annotation added to Dutch to match verb form rules)
+- If user only fixed one language, generate the other normally but ensure BOTH comply with all rules
 
 ### H) Verb Form Translations
 When the input is a VERB (single word), handle the form as follows:
@@ -191,7 +200,27 @@ When the input is a VERB (single word), handle the form as follows:
 - "Example sentence translation" must be in ENGLISH
 
 ### J) Extra Notes
-- You MAY add extra notes even if user didn't provide any, if helpful information exists (e.g., literal translations, alternative expressions, usage notes)
+- **For SENTENCE-type cards: ALWAYS add extra notes** explaining:
+  - Grammar points used (e.g., polite form, te-form, etc.)
+  - Particles and their function (e.g., を marks the direct object, は marks the topic)
+  - Verb forms and conjugations
+  - Any other helpful linguistic information
+- **For WORD-type cards:**
+  - If the word is a VERB: MUST include the verb type in extra notes:
+    - "う-verb" (also called godan/Group 1) - e.g., 飲む, 書く, 話す
+    - "る-verb" (also called ichidan/Group 2) - e.g., 食べる, 見る, 寝る
+    - "Irregular verb" - する and 来る (くる)
+  - If the word is an ADJECTIVE: MUST include the adjective type in extra notes:
+    - "い-adjective" - e.g., 大きい, 寒い, 美味しい
+    - "な-adjective" - e.g., 静か, 綺麗, 簡単
+  - **The type classification should come first, but you can (and should) add more helpful notes after it.**
+    - Example for うまい: "い-adjective. Informal/casual way to say 'delicious.' Can also mean 'skillful' or 'good at something.'"
+    - Example for できる: "る-verb. Potential form of する. Means 'to be able to do' or 'to be completed.'"
+  - **Note irregular conjugations** when applicable:
+    - Example for いい: "い-adjective (irregular). Conjugates with よ- stem: よくない (negative), よかった (past)."
+    - Example for かっこいい: "い-adjective (irregular). Conjugates with よ- stem: かっこよくない, かっこよかった."
+  - For other word types (nouns, adverbs, etc.): MAY add extra notes if helpful
+- For PHRASE-type cards: You MAY add extra notes if helpful (e.g., literal translations, usage notes)
 - If user provided extra notes, rewrite them into clear, concise English
 - Fix any typos or spelling errors
 - Ensure proper formatting:
@@ -205,6 +234,8 @@ When the input is a VERB (single word), handle the form as follows:
 ### K) Sound Fields
 - Leave the "Sound" field empty (word/phrase audio added manually)
 - Leave the "Sound example" field empty (sentence audio added manually)
+- Design note: Sound fields are always empty for new cards. Audio is added manually
+  after import. For migration, existing sounds are preserved from old cards.
 
 ## Input Cards to Process:
 

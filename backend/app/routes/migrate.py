@@ -1,7 +1,6 @@
 """Migration endpoints for migrating old Anki notes to the new format."""
 
 import logging
-import re
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -22,30 +21,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/migrate", tags=["migrate"])
 
-
-def strip_asterisk_markers(fields: dict[str, str]) -> dict[str, str]:
-    """Remove asterisk markers from translation fields.
-
-    The agent adds * to mark user-provided fixed translations (e.g., "Self-introduction*, zelfintroductie").
-    For migration, we want clean translations without these markers.
-    """
-    result = fields.copy()
-
-    # Fields that may contain asterisk markers
-    translation_fields = ["English", "Dutch"]
-
-    for field in translation_fields:
-        if field in result and result[field]:
-            # Remove asterisk that appears after a word (e.g., "Word*" -> "Word")
-            # This handles patterns like "Word*, other" -> "Word, other"
-            result[field] = re.sub(r'\*(?=,|$)', '', result[field])
-
-    return result
-
-# Old note type name - could be made configurable
+# Note type names - could be made configurable
 OLD_NOTE_TYPE = "Philippe's Japanese v3"
+NEW_NOTE_TYPE = "Japanese Vocabulary (Agent)"
 
 # Field mapping from old to new format
+# Design note: "Nederlands" → "Dutch" - the old format used Dutch language naming ("Nederlands"),
+# while the new format uses English ("Dutch") for consistency with other field names.
+# "Sound Example" → "Sound example" - standardized casing (capital S, lowercase e).
 FIELD_MAPPING = {
     "Kana": "Hiragana/Katakana",
     "Romaji": "Romaji",
@@ -97,6 +80,39 @@ class PreviewResponse(BaseModel):
     note_id: int
     new_fields: dict[str, str]
     auto_classified_type: CardType
+
+
+# Batch preview models
+class BatchPreviewItem(BaseModel):
+    """Single item in a batch preview request."""
+    note_id: int
+    raw_input: str
+    fixed_english: Optional[str] = None
+    fixed_dutch: Optional[str] = None
+    extra_notes: Optional[str] = None
+    preserve_sound: Optional[str] = None
+    preserve_sound_example: Optional[str] = None
+
+
+class BatchPreviewRequest(BaseModel):
+    """Request to generate previews for multiple notes at once."""
+    items: list[BatchPreviewItem] = Field(..., min_length=1, max_length=10)
+
+
+class BatchPreviewItemResult(BaseModel):
+    """Result for a single item in a batch preview."""
+    note_id: int
+    success: bool
+    new_fields: Optional[dict[str, str]] = None
+    auto_classified_type: Optional[CardType] = None
+    error: Optional[str] = None
+
+
+class BatchPreviewResponse(BaseModel):
+    """Response containing results for all items in the batch."""
+    results: list[BatchPreviewItemResult]
+    successful_count: int
+    failed_count: int
 
 
 class ApproveRequest(BaseModel):
@@ -217,12 +233,13 @@ async def generate_migration_preview(request: PreviewRequest) -> PreviewResponse
     config = load_config()
 
     # Create a draft card for the agent
+    # Note: We don't pass old translations - the agent generates fresh ones from kana input.
+    # Users can copy-paste old translations into the preview if they want to preserve them.
     draft_card = DraftCard(
         raw_input=request.raw_input,
-        fixed_english=request.fixed_english,
-        fixed_dutch=request.fixed_dutch,
+        fixed_english=None,
+        fixed_dutch=None,
         extra_notes=request.extra_notes,
-        tags=[],
         card_type_override=None  # Let agent classify
     )
 
@@ -238,8 +255,8 @@ async def generate_migration_preview(request: PreviewRequest) -> PreviewResponse
 
         generated = generated_cards[0]
 
-        # Strip asterisk markers from translations (used in normal app, not needed for migration)
-        new_fields = strip_asterisk_markers(generated.fields)
+        # Copy fields so we can add preserved sounds without mutating the original
+        new_fields = generated.fields.copy()
 
         # Preserve the original sounds if provided
         if request.preserve_sound:
@@ -261,11 +278,107 @@ async def generate_migration_preview(request: PreviewRequest) -> PreviewResponse
         raise HTTPException(status_code=500, detail="Failed to generate preview. Please try again.")
 
 
+@router.post("/preview-batch", response_model=BatchPreviewResponse, dependencies=[Depends(verify_api_key)])
+async def generate_batch_migration_preview(request: BatchPreviewRequest) -> BatchPreviewResponse:
+    """Generate previews for multiple notes in a single batch.
+
+    This endpoint processes up to 10 notes at once, returning results for each.
+    Individual item failures don't fail the entire batch - partial results are returned.
+
+    Args:
+        request: BatchPreviewRequest containing up to 10 items
+
+    Returns:
+        BatchPreviewResponse with results for each item
+    """
+    config = load_config()
+
+    # Build draft cards for all items
+    draft_cards = []
+    item_mapping = []  # Track which draft card corresponds to which note_id
+
+    for item in request.items:
+        # Don't pass old translations - let agent generate new ones
+        draft_card = DraftCard(
+            raw_input=item.raw_input,
+            fixed_english=None,
+            fixed_dutch=None,
+            extra_notes=item.extra_notes,
+            card_type_override=None  # Let agent auto-classify
+        )
+        draft_cards.append(draft_card)
+        item_mapping.append({
+            'note_id': item.note_id,
+            'preserve_sound': item.preserve_sound,
+            'preserve_sound_example': item.preserve_sound_example,
+        })
+
+    try:
+        # Generate all cards in a single agent call
+        generated_cards = await generate_cards_with_agent(
+            draft_cards=draft_cards,
+            fields=config.fields,
+            tags=config.tags,
+        )
+
+        if not generated_cards or len(generated_cards) != len(request.items):
+            logger.error(f"Agent returned {len(generated_cards) if generated_cards else 0} cards, expected {len(request.items)}")
+            raise HTTPException(status_code=500, detail="Agent returned unexpected number of cards")
+
+        # Build results
+        results = []
+        for i, generated in enumerate(generated_cards):
+            item_info = item_mapping[i]
+
+            # Copy fields so we can add preserved sounds without mutating the original
+            new_fields = generated.fields.copy()
+            if item_info['preserve_sound']:
+                new_fields['Sound'] = item_info['preserve_sound']
+            if item_info['preserve_sound_example']:
+                new_fields['Sound example'] = item_info['preserve_sound_example']
+
+            results.append(BatchPreviewItemResult(
+                note_id=item_info['note_id'],
+                success=True,
+                new_fields=new_fields,
+                auto_classified_type=generated.auto_classified_type,
+            ))
+
+        return BatchPreviewResponse(
+            results=results,
+            successful_count=len(results),
+            failed_count=0,
+        )
+
+    except CardGenerationError as e:
+        logger.error(f"Batch preview generation failed: {e}")
+        # Return all items as failed
+        results = [
+            BatchPreviewItemResult(
+                note_id=item.note_id,
+                success=False,
+                error="Generation failed - please retry",
+            )
+            for item in request.items
+        ]
+        return BatchPreviewResponse(
+            results=results,
+            successful_count=0,
+            failed_count=len(results),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in batch preview: {e}")
+        raise HTTPException(status_code=500, detail="Batch preview generation failed")
+
+
 @router.post("/approve", response_model=ApproveResponse, dependencies=[Depends(verify_api_key)])
 async def approve_migration(request: ApproveRequest) -> ApproveResponse:
     """Approve and commit a migrated note to Anki.
 
-    This updates the note's fields in Anki with the new values.
+    This changes the note's model (note type) to the new format and updates all fields.
+    The change is immediately reflected in Anki.
 
     Args:
         request: ApproveRequest with note ID and new field values
@@ -276,14 +389,14 @@ async def approve_migration(request: ApproveRequest) -> ApproveResponse:
     client = get_anki_client()
 
     try:
-        # Update the note fields
-        await client.update_note_fields(request.note_id, request.new_fields)
-
-        # Update tags if provided
-        if request.tags:
-            # First remove old card type tags, then add new ones
-            await client.remove_tags([request.note_id], "word phrase sentence")
-            await client.add_tags([request.note_id], " ".join(request.tags))
+        # Change the note model (note type) and update all fields in one operation
+        # This converts the note from the old format to the new format
+        await client.change_note_model(
+            note_id=request.note_id,
+            new_model_name=NEW_NOTE_TYPE,
+            fields=request.new_fields,
+            tags=request.tags
+        )
 
         return ApproveResponse(success=True, note_id=request.note_id)
 

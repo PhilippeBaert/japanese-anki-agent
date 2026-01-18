@@ -85,4 +85,30 @@ export interface MigrationNoteState {
   preview: PreviewResponse | null;
   status: 'pending' | 'previewing' | 'ready' | 'approving' | 'approved' | 'skipped' | 'error';
   error?: string;
+  isCore?: boolean;  // true = Core (priority), false = Extra
+}
+
+// Batch preview types
+export interface BatchPreviewItem {
+  noteId: number;
+  rawInput: string;
+  fixedEnglish?: string;
+  fixedDutch?: string;
+  extraNotes?: string;
+  preserveSound?: string;
+  preserveSoundExample?: string;
+}
+
+export interface BatchPreviewItemResult {
+  note_id: number;
+  success: boolean;
+  new_fields?: Record<string, string>;
+  auto_classified_type?: CardType;
+  error?: string;
+}
+
+export interface BatchPreviewResponse {
+  results: BatchPreviewItemResult[];
+  successful_count: number;
+  failed_count: number;
 }

@@ -9,6 +9,9 @@ export default function MigratePage() {
     connectionStatus,
     isCheckingConnection,
     checkConnection,
+    config,
+    source,
+    setSource,
     decks,
     isLoadingDecks,
     decksError,
@@ -23,6 +26,8 @@ export default function MigratePage() {
     setCurrentNoteIndex,
     regeneratePreview,
     updatePreviewField,
+    updateCardType,
+    toggleCore,
     approveNote,
     skipNote,
     approvedCount,
@@ -145,6 +150,31 @@ export default function MigratePage() {
               </div>
             </div>
 
+            {/* Source Selection */}
+            {config?.sources && config.sources.length > 0 && (
+              <div className="mb-6">
+                <div className="bg-white rounded-lg shadow-sm p-4">
+                  <div className="flex items-center gap-4">
+                    <label className="text-sm font-medium text-gray-700">Source Tag:</label>
+                    <select
+                      value={source}
+                      onChange={(e) => setSource(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {config.sources.map((s) => (
+                        <option key={s.tag} value={s.tag}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-sm text-gray-500">
+                      This tag will be added to all approved cards
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Progress Bar */}
             {selectedDeck && totalCount > 0 && (
               <div className="mb-6">
@@ -248,6 +278,8 @@ export default function MigratePage() {
                 noteState={currentNote}
                 onRegenerate={() => regeneratePreview(currentNoteIndex)}
                 onUpdateField={(field, value) => updatePreviewField(currentNoteIndex, field, value)}
+                onUpdateCardType={(cardType) => updateCardType(currentNoteIndex, cardType)}
+                onToggleCore={() => toggleCore(currentNoteIndex)}
                 onApprove={() => approveNote(currentNoteIndex)}
                 onSkip={() => skipNote(currentNoteIndex)}
               />

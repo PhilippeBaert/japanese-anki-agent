@@ -17,7 +17,6 @@ class DraftCard(BaseModel):
     fixed_english: Optional[str] = Field(None, max_length=2000, description="Optional fixed English translation")
     fixed_dutch: Optional[str] = Field(None, max_length=2000, description="Optional fixed Dutch translation")
     extra_notes: Optional[str] = Field(None, max_length=2000, description="Optional extra notes")
-    tags: list[str] = Field(default_factory=list, max_length=50, description="Tags for this card")
     card_type_override: Optional[CardType] = Field(None, description="Override auto-classification")
 
 

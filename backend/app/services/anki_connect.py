@@ -145,6 +145,32 @@ class AnkiConnectClient:
             "fields": fields
         })
 
+    async def change_note_model(
+        self,
+        note_id: int,
+        new_model_name: str,
+        fields: dict[str, str],
+        tags: list[str] | None = None
+    ) -> None:
+        """Change a note's model (note type) and update its fields.
+
+        This is used for migration - converting notes from one type to another.
+
+        Args:
+            note_id: The note ID to update
+            new_model_name: Name of the new note type
+            fields: Dictionary mapping new field names to their values
+            tags: Optional list of tags to set (replaces existing tags)
+        """
+        # Build the fields mapping for the new model
+        # AnkiConnect expects {newFieldName: newValue}
+        await self._invoke("updateNoteModel", note={
+            "id": note_id,
+            "modelName": new_model_name,
+            "fields": fields,
+            "tags": tags if tags else []
+        })
+
     async def add_tags(self, note_ids: list[int], tags: str) -> None:
         """Add tags to notes.
 

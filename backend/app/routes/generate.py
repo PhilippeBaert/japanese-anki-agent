@@ -72,7 +72,6 @@ async def regenerate_card(request: RegenerateCardRequest) -> GeneratedCard:
         fixed_english=request.fixed_english,
         fixed_dutch=request.fixed_dutch,
         extra_notes=request.extra_notes,
-        tags=[request.target_type],
         card_type_override=request.target_type
     )
 

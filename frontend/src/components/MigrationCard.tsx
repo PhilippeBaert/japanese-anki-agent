@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MigrationNoteState } from '@/types';
+import { CardType, MigrationNoteState } from '@/types';
 
 // Field mapping from old to new
 const FIELD_MAPPING: Record<string, string> = {
@@ -48,6 +48,8 @@ interface MigrationCardProps {
   noteState: MigrationNoteState;
   onRegenerate: () => void;
   onUpdateField: (field: string, value: string) => void;
+  onUpdateCardType: (cardType: CardType) => void;
+  onToggleCore: () => void;
   onApprove: () => void;
   onSkip: () => void;
 }
@@ -56,11 +58,13 @@ export function MigrationCard({
   noteState,
   onRegenerate,
   onUpdateField,
+  onUpdateCardType,
+  onToggleCore,
   onApprove,
   onSkip,
 }: MigrationCardProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
-  const { note, preview, status, error } = noteState;
+  const { note, preview, status, error, isCore } = noteState;
 
   const isLoading = status === 'previewing' || status === 'approving';
   const canApprove = status === 'ready' && preview !== null;
@@ -76,9 +80,33 @@ export function MigrationCard({
           <StatusBadge status={status} />
         </div>
         {preview && (
-          <span className="text-sm text-gray-500">
-            Type: <span className="font-medium">{preview.auto_classified_type}</span>
-          </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Type:</span>
+              <select
+                value={preview.auto_classified_type}
+                onChange={(e) => onUpdateCardType(e.target.value as CardType)}
+                className="text-sm font-medium px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="word">word</option>
+                <option value="phrase">phrase</option>
+                <option value="sentence">sentence</option>
+              </select>
+            </div>
+            <button
+              onClick={onToggleCore}
+              disabled={status === 'approved' || status === 'approving'}
+              className="flex items-center gap-1.5 text-sm disabled:opacity-50"
+              title={isCore !== false ? 'Core (click to mark as Extra)' : 'Extra (click to mark as Core)'}
+            >
+              <span className={`text-lg ${isCore !== false ? 'text-yellow-500' : 'text-gray-400'}`}>
+                {isCore !== false ? '\u2605' : '\u2606'}
+              </span>
+              <span className={`font-medium ${isCore !== false ? 'text-yellow-700' : 'text-gray-500'}`}>
+                {isCore !== false ? 'Core' : 'Extra'}
+              </span>
+            </button>
+          </div>
         )}
       </div>
 

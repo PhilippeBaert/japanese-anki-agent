@@ -1,21 +1,30 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { DeckInfo, MigrationNote, MigrationNoteState, PreviewResponse } from '@/types';
+import { AnkiConfig, CardType, DeckInfo, MigrationNote, MigrationNoteState, PreviewResponse, BatchPreviewItem } from '@/types';
 import {
   checkAnkiConnection,
+  fetchConfig,
   getMigrationDecks,
   getMigrationNotes,
   generateMigrationPreview,
+  generateBatchMigrationPreview,
   approveMigration,
   ConnectionStatus,
 } from '@/lib/api';
+
+const BATCH_SIZE = 10;
 
 interface UseMigrationReturn {
   // Connection status
   connectionStatus: ConnectionStatus | null;
   isCheckingConnection: boolean;
   checkConnection: () => Promise<void>;
+
+  // Config and source
+  config: AnkiConfig | null;
+  source: string;
+  setSource: (source: string) => void;
 
   // Decks
   decks: DeckInfo[];
@@ -40,6 +49,8 @@ interface UseMigrationReturn {
   // Actions
   regeneratePreview: (noteIndex: number) => Promise<void>;
   updatePreviewField: (noteIndex: number, field: string, value: string) => void;
+  updateCardType: (noteIndex: number, cardType: CardType) => void;
+  toggleCore: (noteIndex: number) => void;
   approveNote: (noteIndex: number) => Promise<void>;
   skipNote: (noteIndex: number) => void;
 
@@ -54,6 +65,10 @@ export function useMigration(): UseMigrationReturn {
   // Connection status
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+
+  // Config and source
+  const [config, setConfig] = useState<AnkiConfig | null>(null);
+  const [source, setSource] = useState<string>('japanese_class');
 
   // Decks
   const [decks, setDecks] = useState<DeckInfo[]>([]);
@@ -120,6 +135,7 @@ export function useMigration(): UseMigrationReturn {
         note,
         preview: null,
         status: 'pending',
+        isCore: true,
       }));
       setNotes(noteStates);
       // Reset abort flag for new generation
@@ -140,8 +156,7 @@ export function useMigration(): UseMigrationReturn {
       const preview = await generateMigrationPreview({
         noteId: noteState.note.note_id,
         rawInput: noteState.note.old_fields['Kana'] || '',
-        fixedEnglish: noteState.note.old_fields['English'] || undefined,
-        fixedDutch: noteState.note.old_fields['Nederlands'] || undefined,
+        // Don't pass old translations - let agent generate new ones
         extraNotes: noteState.note.old_fields['Extra'] || undefined,
         preserveSound: noteState.note.sound || undefined,
         preserveSoundExample: noteState.note.sound_example || undefined,
@@ -153,70 +168,117 @@ export function useMigration(): UseMigrationReturn {
     }
   }, []);
 
-  // Background sequential generation of all previews
+  // Background batch generation of all previews
   useEffect(() => {
     if (notes.length === 0 || isGeneratingRef.current) return;
 
     const generateAllPreviews = async () => {
       isGeneratingRef.current = true;
 
+      // Find all notes that need preview generation
+      const pendingIndices: number[] = [];
       for (let i = 0; i < notes.length; i++) {
-        // Check if we should abort
-        if (abortGenerationRef.current) {
-          break;
-        }
-
-        // Get current state of this note (it may have changed)
-        const currentNoteState = notes[i];
-
-        // Skip if already has preview, approved, or skipped
+        const note = notes[i];
         if (
-          currentNoteState.status === 'ready' ||
-          currentNoteState.status === 'approved' ||
-          currentNoteState.status === 'skipped' ||
-          currentNoteState.preview !== null
+          note.status === 'pending' &&
+          note.preview === null
         ) {
-          continue;
+          pendingIndices.push(i);
         }
+      }
 
-        // Mark as previewing
+      // Process in batches of BATCH_SIZE
+      for (let batchStart = 0; batchStart < pendingIndices.length; batchStart += BATCH_SIZE) {
+        // Check for abort
+        if (abortGenerationRef.current) break;
+
+        const batchIndices = pendingIndices.slice(batchStart, batchStart + BATCH_SIZE);
+
+        // Mark all notes in this batch as 'previewing'
         setNotes(prev => {
           const newNotes = [...prev];
-          if (newNotes[i].status === 'pending') {
-            newNotes[i] = { ...newNotes[i], status: 'previewing' };
+          for (const idx of batchIndices) {
+            if (newNotes[idx].status === 'pending') {
+              newNotes[idx] = { ...newNotes[idx], status: 'previewing' };
+            }
           }
           return newNotes;
         });
 
-        // Generate the preview
-        const preview = await generateSinglePreview(currentNoteState, i);
-
-        // Check abort again after async operation
-        if (abortGenerationRef.current) {
-          break;
-        }
-
-        // Update with result
-        setNotes(prev => {
-          const newNotes = [...prev];
-          if (preview) {
-            newNotes[i] = { ...newNotes[i], preview, status: 'ready' };
-          } else {
-            newNotes[i] = {
-              ...newNotes[i],
-              status: 'error',
-              error: 'Preview generation failed',
-            };
-          }
-          return newNotes;
+        // Build batch request items
+        const batchItems: BatchPreviewItem[] = batchIndices.map(idx => {
+          const noteState = notes[idx];
+          return {
+            noteId: noteState.note.note_id,
+            rawInput: noteState.note.old_fields['Kana'] || '',
+            // Don't pass old translations - let agent generate new ones
+            extraNotes: noteState.note.old_fields['Extra'] || undefined,
+            preserveSound: noteState.note.sound || undefined,
+            preserveSoundExample: noteState.note.sound_example || undefined,
+          };
         });
+
+        try {
+          const response = await generateBatchMigrationPreview(batchItems);
+
+          // Check abort again after async operation
+          if (abortGenerationRef.current) break;
+
+          // Update notes with results
+          setNotes(prev => {
+            const newNotes = [...prev];
+
+            for (const result of response.results) {
+              // Find the index for this note_id
+              const noteIdx = batchIndices.find(idx =>
+                newNotes[idx].note.note_id === result.note_id
+              );
+
+              if (noteIdx !== undefined) {
+                if (result.success && result.new_fields) {
+                  newNotes[noteIdx] = {
+                    ...newNotes[noteIdx],
+                    preview: {
+                      note_id: result.note_id,
+                      new_fields: result.new_fields,
+                      auto_classified_type: result.auto_classified_type!,
+                    },
+                    status: 'ready',
+                  };
+                } else {
+                  newNotes[noteIdx] = {
+                    ...newNotes[noteIdx],
+                    status: 'error',
+                    error: result.error || 'Preview generation failed',
+                  };
+                }
+              }
+            }
+
+            return newNotes;
+          });
+
+        } catch (error) {
+          // Batch request failed - mark all items in batch as error
+          setNotes(prev => {
+            const newNotes = [...prev];
+            for (const idx of batchIndices) {
+              newNotes[idx] = {
+                ...newNotes[idx],
+                status: 'error',
+                error: error instanceof Error ? error.message : 'Batch preview failed',
+              };
+            }
+            return newNotes;
+          });
+        }
       }
 
       isGeneratingRef.current = false;
     };
 
     generateAllPreviews();
-  }, [notes.length, generateSinglePreview]); // Only trigger when notes array length changes
+  }, [notes.length]); // Only trigger when notes array length changes
 
   // Regenerate preview for a specific note
   const regeneratePreview = useCallback(async (noteIndex: number) => {
@@ -268,6 +330,34 @@ export function useMigration(): UseMigrationReturn {
     });
   }, []);
 
+  // Update the card type in the preview
+  const updateCardType = useCallback((noteIndex: number, cardType: CardType) => {
+    setNotes(prev => {
+      const newNotes = [...prev];
+      const current = newNotes[noteIndex];
+      if (!current.preview) return prev;
+
+      newNotes[noteIndex] = {
+        ...current,
+        preview: {
+          ...current.preview,
+          auto_classified_type: cardType,
+        },
+      };
+      return newNotes;
+    });
+  }, []);
+
+  // Toggle core/extra status
+  const toggleCore = useCallback((noteIndex: number) => {
+    setNotes(prev => {
+      const newNotes = [...prev];
+      const current = newNotes[noteIndex];
+      newNotes[noteIndex] = { ...current, isCore: !current.isCore };
+      return newNotes;
+    });
+  }, []);
+
   // Approve a note (commit to Anki)
   const approveNote = useCallback(async (noteIndex: number) => {
     const noteState = notes[noteIndex];
@@ -283,7 +373,7 @@ export function useMigration(): UseMigrationReturn {
       await approveMigration({
         noteId: noteState.note.note_id,
         newFields: noteState.preview.new_fields,
-        tags: [noteState.preview.auto_classified_type],
+        tags: [source, noteState.isCore !== false ? 'core' : 'extra', noteState.preview.auto_classified_type],
       });
 
       setNotes(prev => {
@@ -310,7 +400,7 @@ export function useMigration(): UseMigrationReturn {
         return newNotes;
       });
     }
-  }, [notes]);
+  }, [notes, source]);
 
   // Skip a note
   const skipNote = useCallback((noteIndex: number) => {
@@ -334,6 +424,22 @@ export function useMigration(): UseMigrationReturn {
     checkConnection();
   }, [checkConnection]);
 
+  // Fetch config on mount (for source options)
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const configData = await fetchConfig();
+        setConfig(configData);
+        if (configData.defaultSource) {
+          setSource(configData.defaultSource);
+        }
+      } catch (err) {
+        console.error('Failed to load config:', err);
+      }
+    };
+    loadConfig();
+  }, []);
+
   // Load decks when connected
   useEffect(() => {
     if (connectionStatus?.connected) {
@@ -351,6 +457,9 @@ export function useMigration(): UseMigrationReturn {
     connectionStatus,
     isCheckingConnection,
     checkConnection,
+    config,
+    source,
+    setSource,
     decks,
     isLoadingDecks,
     decksError,
@@ -365,6 +474,8 @@ export function useMigration(): UseMigrationReturn {
     setCurrentNoteIndex,
     regeneratePreview,
     updatePreviewField,
+    updateCardType,
+    toggleCore,
     approveNote,
     skipNote,
     approvedCount,

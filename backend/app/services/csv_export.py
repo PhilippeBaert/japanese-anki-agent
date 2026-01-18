@@ -120,7 +120,9 @@ def generate_csv_with_priority(
             if source:
                 tags_list.append(source)
             if is_core:
-                tags_list.append('core')  # Add 'core' tag for priority cards
+                tags_list.append('core')
+            else:
+                tags_list.append('extra')
             tags_list.extend(card.tags)
             tags_value = ' '.join(tags_list)
             row.append(tags_value)

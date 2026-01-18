@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 DEBUG_MODE = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
 
 # Model configuration
+# Note: Generation is non-idempotent - calling with the same input may produce slightly
+# different results (different example sentences, wording variations) due to model sampling.
+# This is expected behavior; each generation is a fresh creative task.
 DEFAULT_MODEL = "claude-sonnet-4-5-20250929"
 DEFAULT_MAX_TURNS = 1
 
@@ -70,7 +73,6 @@ async def generate_cards_with_agent(
             'fixed_english': card.fixed_english,
             'fixed_dutch': card.fixed_dutch,
             'extra_notes': card.extra_notes,
-            'tags': card.tags,
             'card_type_override': card.card_type_override
         }
         for card in draft_cards
