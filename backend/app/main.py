@@ -54,9 +54,14 @@ RATE_LIMITS = {
 DEFAULT_RATE_LIMIT = 30  # Default for unlisted endpoints
 RATE_WINDOW = 60  # Window in seconds (1 minute)
 
+# Cleanup configuration for rate limit storage
+RATE_LIMIT_CLEANUP_INTERVAL = 300  # Run cleanup every 5 minutes
+RATE_LIMIT_MAX_ENTRIES = 10000  # Maximum number of (IP, endpoint) pairs to track
+
 # In-memory storage for request timestamps per IP per endpoint
 # Structure: {(client_ip, endpoint): [timestamp1, timestamp2, ...]}
 request_timestamps: dict[tuple[str, str], list[float]] = defaultdict(list)
+_last_cleanup_time: float = 0.0
 
 
 def get_client_ip(request: Request) -> str:
@@ -82,6 +87,53 @@ def get_rate_limit_for_path(path: str) -> int:
     return DEFAULT_RATE_LIMIT
 
 
+def _cleanup_stale_rate_limit_entries() -> None:
+    """
+    Periodically clean up stale entries from the rate limit dictionary.
+
+    This prevents unbounded memory growth when many unique (IP, endpoint)
+    combinations are seen over time.
+    """
+    global _last_cleanup_time
+
+    now = time.time()
+
+    # Only run cleanup periodically
+    if now - _last_cleanup_time < RATE_LIMIT_CLEANUP_INTERVAL:
+        return
+
+    _last_cleanup_time = now
+
+    # Remove entries with no recent timestamps
+    keys_to_remove = []
+    for key, timestamps in request_timestamps.items():
+        # Remove expired timestamps first
+        valid_timestamps = [t for t in timestamps if now - t < RATE_WINDOW]
+        if not valid_timestamps:
+            keys_to_remove.append(key)
+        else:
+            timestamps[:] = valid_timestamps
+
+    for key in keys_to_remove:
+        del request_timestamps[key]
+
+    # If still over limit, remove oldest entries (LRU-style)
+    if len(request_timestamps) > RATE_LIMIT_MAX_ENTRIES:
+        # Sort by most recent timestamp (newest first), remove oldest
+        sorted_keys = sorted(
+            request_timestamps.keys(),
+            key=lambda k: max(request_timestamps[k]) if request_timestamps[k] else 0,
+            reverse=True
+        )
+        keys_to_keep = set(sorted_keys[:RATE_LIMIT_MAX_ENTRIES])
+        keys_to_remove = [k for k in request_timestamps.keys() if k not in keys_to_keep]
+        for key in keys_to_remove:
+            del request_timestamps[key]
+
+    if keys_to_remove:
+        logger.debug(f"Rate limit cleanup: removed {len(keys_to_remove)} stale entries")
+
+
 def check_rate_limit(client_ip: str, endpoint: str) -> tuple[bool, int, int]:
     """
     Check if a request is within rate limits.
@@ -89,6 +141,9 @@ def check_rate_limit(client_ip: str, endpoint: str) -> tuple[bool, int, int]:
     Returns:
         tuple: (allowed, remaining_requests, retry_after_seconds)
     """
+    # Periodically clean up stale entries to prevent memory leaks
+    _cleanup_stale_rate_limit_entries()
+
     now = time.time()
     key = (client_ip, endpoint)
     limit = get_rate_limit_for_path(endpoint)

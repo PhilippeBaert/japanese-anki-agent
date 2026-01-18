@@ -1,5 +1,6 @@
 """Claude Agent SDK integration for card generation."""
 
+import asyncio
 import json
 import logging
 import os
@@ -31,6 +32,10 @@ DEFAULT_CARD_TYPE = "word"
 LOG_PREVIEW_SHORT = 200
 LOG_PREVIEW_MEDIUM = 500
 LOG_PREVIEW_LONG = 1000
+
+# Repair loop configuration
+REPAIR_BACKOFF_BASE = 1.0  # Base delay in seconds for exponential backoff
+REPAIR_BACKOFF_MAX = 10.0  # Maximum delay between repair attempts
 
 
 def _create_stderr_handler() -> Callable[[str], None]:
@@ -102,10 +107,21 @@ async def generate_cards_with_agent(
     # Validate cards
     is_valid, errors = validate_all_cards(cards_data, fields)
 
-    # Repair if needed
+    # Repair if needed with exponential backoff
     repair_attempts = 0
     while not is_valid and repair_attempts < max_repair_attempts:
         repair_attempts += 1
+
+        # Apply exponential backoff before retry (except for first attempt)
+        if repair_attempts > 1:
+            backoff_delay = min(
+                REPAIR_BACKOFF_BASE * (2 ** (repair_attempts - 1)),
+                REPAIR_BACKOFF_MAX
+            )
+            logger.info(f"Repair attempt {repair_attempts}: waiting {backoff_delay:.1f}s before retry")
+            await asyncio.sleep(backoff_delay)
+
+        logger.info(f"Repair attempt {repair_attempts}/{max_repair_attempts} - errors: {errors}")
         repair_prompt = build_repair_prompt(cards_data, errors)
         result_text = await _run_agent_query(repair_prompt, options)
         cards_data = _parse_json_result(result_text)

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { DraftCard, GeneratedCard, AnkiConfig, CardType } from '@/types';
 import { fetchConfig, generateCards, exportCSVWithPriority, regenerateCard } from '@/lib/api';
 
@@ -72,8 +72,8 @@ export function useAnkiAgent(): UseAnkiAgentReturn {
   // Generated cards
   const [generatedCards, setGeneratedCards] = useState<GeneratedCard[]>([]);
 
-  // Store original drafts for regeneration
-  const [originalDrafts, setOriginalDrafts] = useState<DraftCard[]>([]);
+  // Store original drafts for regeneration using ref to avoid stale closures
+  const originalDraftsRef = useRef<DraftCard[]>([]);
 
   // Filename
   const [filename, setFilename] = useState('anki_cards');
@@ -144,7 +144,7 @@ export function useAnkiAgent(): UseAnkiAgentReturn {
       const response = await generateCards(request);
 
       // Store original drafts for potential regeneration
-      setOriginalDrafts(validCards);
+      originalDraftsRef.current = validCards;
 
       // Convert response cards and add tracking fields
       const cardsWithTracking = response.cards.map((card: { fields: Record<string, string>; tags: string[]; auto_classified_type?: CardType }) => ({
@@ -212,7 +212,8 @@ export function useAnkiAgent(): UseAnkiAgentReturn {
 
   // Regenerate a single card with a new type
   const handleRegenerateCard = useCallback(async (cardIndex: number, targetType: CardType) => {
-    const draft = originalDrafts[cardIndex];
+    // Use ref to always get fresh data, avoiding stale closure issues
+    const draft = originalDraftsRef.current[cardIndex];
     if (!draft) {
       return;
     }
@@ -251,7 +252,7 @@ export function useAnkiAgent(): UseAnkiAgentReturn {
         return newCards;
       });
     }
-  }, [originalDrafts]);
+  }, []);
 
   // Export draft cards to JSON
   const handleExportDraftsJSON = useCallback(() => {

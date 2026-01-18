@@ -140,12 +140,30 @@ export function GeneratedTable({
     field: string;
   } | null>(null);
 
-  // Generate stable IDs for cards using a ref
-  // IDs are regenerated only when the cards array length changes
-  const cardIdsRef = useRef<string[]>([]);
-  if (cardIdsRef.current.length !== cards.length) {
-    cardIdsRef.current = cards.map(() => crypto.randomUUID());
-  }
+  // Generate stable IDs for cards based on content hash
+  // This ensures IDs persist correctly even when cards are reordered
+  const cardIdsRef = useRef<Map<string, string>>(new Map());
+  const cardIds = useMemo(() => {
+    const getContentKey = (card: GeneratedCard): string => {
+      // Create a stable key based on card content
+      const kana = card.fields['Hiragana/Katakana'] || '';
+      const kanji = card.fields['Kanji'] || '';
+      const dutch = card.fields['Dutch'] || '';
+      return `${kana}|${kanji}|${dutch}`;
+    };
+
+    return cards.map((card, index) => {
+      const contentKey = getContentKey(card);
+      // Check if we have an ID for this content already
+      if (cardIdsRef.current.has(contentKey)) {
+        return cardIdsRef.current.get(contentKey)!;
+      }
+      // Generate a new ID and store it
+      const newId = crypto.randomUUID();
+      cardIdsRef.current.set(contentKey, newId);
+      return newId;
+    });
+  }, [cards]);
 
   const updateField = useCallback((cardIndex: number, field: string, value: string) => {
     const newCards = [...cards];
@@ -250,10 +268,10 @@ export function GeneratedTable({
           <tbody className="bg-white divide-y divide-gray-200">
             {cards.map((card, cardIndex) => (
               <TableRow
-                key={cardIdsRef.current[cardIndex]}
+                key={cardIds[cardIndex]}
                 card={card}
                 cardIndex={cardIndex}
-                cardId={cardIdsRef.current[cardIndex]}
+                cardId={cardIds[cardIndex]}
                 fields={fields}
                 editingCell={editingCell}
                 cardsLength={cards.length}

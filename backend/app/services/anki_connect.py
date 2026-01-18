@@ -31,11 +31,26 @@ class AnkiConnectClient:
     """Client for AnkiConnect REST API.
 
     AnkiConnect runs on localhost:8765 when Anki is open with the add-on installed.
+
+    This client maintains a persistent httpx.AsyncClient for connection pooling.
     """
 
     def __init__(self, host: str = "localhost", port: int = 8765):
         self.url = f"http://{host}:{port}"
         self.timeout = 30.0
+        self._http_client: Optional[httpx.AsyncClient] = None
+
+    async def _get_http_client(self) -> httpx.AsyncClient:
+        """Get or create the persistent HTTP client."""
+        if self._http_client is None or self._http_client.is_closed:
+            self._http_client = httpx.AsyncClient(timeout=self.timeout)
+        return self._http_client
+
+    async def close(self) -> None:
+        """Close the HTTP client and release resources."""
+        if self._http_client is not None and not self._http_client.is_closed:
+            await self._http_client.aclose()
+            self._http_client = None
 
     async def _invoke(self, action: str, **params: Any) -> Any:
         """Execute an AnkiConnect action.
@@ -56,16 +71,16 @@ class AnkiConnectClient:
             "params": params
         }
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            try:
-                response = await client.post(self.url, json=payload)
-                response.raise_for_status()
-            except httpx.ConnectError:
-                raise AnkiConnectError(
-                    "Cannot connect to AnkiConnect. Is Anki running with AnkiConnect add-on installed?"
-                )
-            except httpx.HTTPError as e:
-                raise AnkiConnectError(f"HTTP error communicating with AnkiConnect: {e}")
+        client = await self._get_http_client()
+        try:
+            response = await client.post(self.url, json=payload)
+            response.raise_for_status()
+        except httpx.ConnectError:
+            raise AnkiConnectError(
+                "Cannot connect to AnkiConnect. Is Anki running with AnkiConnect add-on installed?"
+            )
+        except httpx.HTTPError as e:
+            raise AnkiConnectError(f"HTTP error communicating with AnkiConnect: {e}")
 
         result = response.json()
 

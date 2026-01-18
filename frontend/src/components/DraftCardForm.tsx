@@ -34,7 +34,8 @@ export const DraftCardForm = forwardRef<DraftCardFormHandle, DraftCardFormProps>
     };
 
     const handleKeyDown = (e: React.KeyboardEvent, isTextarea = false) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === 'Enter') {
+        // Allow Shift+Enter in textareas for newlines
         if (isTextarea && e.shiftKey) return;
         e.preventDefault();
         onAddCardAfter?.();
