@@ -108,13 +108,15 @@ class PreviewResponse(BaseModel):
 # Batch preview models
 class BatchPreviewItem(BaseModel):
     """Single item in a batch preview request."""
-    note_id: int
-    raw_input: str
-    fixed_english: Optional[str] = None
-    fixed_dutch: Optional[str] = None
-    extra_notes: Optional[str] = None
-    preserve_sound: Optional[str] = None
-    preserve_sound_example: Optional[str] = None
+    model_config = {"populate_by_name": True}
+
+    note_id: int = Field(alias="noteId")
+    raw_input: str = Field(alias="rawInput")
+    fixed_english: Optional[str] = Field(default=None, alias="fixedEnglish")
+    fixed_dutch: Optional[str] = Field(default=None, alias="fixedDutch")
+    extra_notes: Optional[str] = Field(default=None, alias="extraNotes")
+    preserve_sound: Optional[str] = Field(default=None, alias="preserveSound")
+    preserve_sound_example: Optional[str] = Field(default=None, alias="preserveSoundExample")
 
 
 class BatchPreviewRequest(BaseModel):

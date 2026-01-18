@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Literal
 
 # Card type classification
@@ -22,9 +22,16 @@ class DraftCard(BaseModel):
 
 class GeneratedCard(BaseModel):
     """A fully generated Anki card"""
-    fields: dict[str, str] = Field(..., max_length=50, description="Field name to value mapping")
+    fields: dict[str, str] = Field(..., description="Field name to value mapping")
     tags: list[str] = Field(default_factory=list, max_length=50, description="Tags for this card")
     auto_classified_type: CardType = Field(..., description="Auto-classified card type (word/phrase/sentence)")
+
+    @field_validator("fields")
+    @classmethod
+    def validate_fields_size(cls, v: dict[str, str]) -> dict[str, str]:
+        if len(v) > 50:
+            raise ValueError("fields cannot have more than 50 entries")
+        return v
 
 
 class GenerateRequest(BaseModel):

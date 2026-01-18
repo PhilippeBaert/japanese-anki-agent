@@ -15,6 +15,7 @@ const FIELD_MAPPING: Record<string, string> = {
   'Example translation': 'Example sentence translation',
   'Extra': 'Extra notes',
   'Sound': 'Sound',
+  'Sound Example': 'Sound example',
 };
 
 // Order of fields to display
@@ -29,6 +30,7 @@ const OLD_FIELDS_ORDER = [
   'Example translation',
   'Extra',
   'Sound',
+  'Sound Example',
 ];
 
 const NEW_FIELDS_ORDER = [
@@ -42,6 +44,7 @@ const NEW_FIELDS_ORDER = [
   'Example sentence translation',
   'Extra notes',
   'Sound',
+  'Sound example',
 ];
 
 interface MigrationCardProps {
