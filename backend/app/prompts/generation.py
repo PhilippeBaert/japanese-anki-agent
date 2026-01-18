@@ -56,7 +56,10 @@ Generate complete Anki flashcard data for each input provided below.
    - Examples: "shukudai wa kantan desu", "watashi wa nihongo wo benkyou shimasu"
    - Key test: Could stand alone as a complete thought with a verb
 
-**IMPORTANT: If card_type_override is provided (not null), use that classification instead of auto-detecting.**
+**IMPORTANT: If card_type_override is provided (not null), use that classification for all purposes:
+- Use it for tags (e.g., ["phrase"])
+- Use it for auto_classified_type (this field contains the FINAL classification used, whether auto-detected or overridden)
+- Apply the appropriate example sentence and formatting rules for that type**
 
 ### B) Example Sentence Rules Based on Classification
 
@@ -102,8 +105,11 @@ Use spaces to separate logical units for readability. Follow these rules:
 - Numbers + counters: stay together
   - Correct: "3にん" NOT "3 にん"
   - Correct: "9じ" NOT "9 じ"
-- Compound verbs: stay together
-  - Correct: "もってきます" NOT "もって きます"
+- Compound verbs and auxiliary constructions: keep the verb complex together
+  - V-て + motion verbs: "もってきます" NOT "もって きます"
+  - V-て + auxiliary verbs: "たべてしまいます", "よんでおきます", "みておきます"
+  - V-stem + suffix verbs: "たべはじめます", "よみおわります"
+  - Chained verbs: keep entire chain together (e.g., "いってかえってきます")
 
 **SEPARATE WITH SPACE:**
 - Nouns from other nouns: "わたし の ともだち"
@@ -161,9 +167,10 @@ Use spaces to separate logical units for readability. Follow these rules:
   - For single words/phrases: no period needed
   - **Convert any "/" separators to commas** for consistency
   - **IMPORTANT: Still apply ALL other rules from this prompt** - especially:
-    - Section H verb form annotations: if input is a conjugated verb, BOTH English and Dutch
-      must have the form annotation (e.g., "polite form" / "beleefde vorm"), even if the
-      fixed translation didn't include it
+    - Section H verb form annotations: if input is a SINGLE-WORD conjugated verb (card type "word"),
+      BOTH English and Dutch must have the form annotation (e.g., "polite form" for English,
+      "beleefde vorm" for Dutch), even if the fixed translation didn't include it.
+      This rule does NOT apply to phrase or sentence cards.
     - If the fixed translation is plainly wrong or misleading, correct it
   - Place the (corrected/enhanced) fixed term FIRST, then add additional translations after, comma-separated
   - Example: fixed Dutch "juist-teken" → "Juist-teken, correct teken, cirkel"
@@ -289,7 +296,16 @@ def build_repair_prompt(original_cards: list[dict], errors: list[str]) -> str:
 
 ## Repair Instructions:
 1. Fix each error while preserving correct data
-2. For "kana field contains kanji" errors: Convert all kanji to hiragana/katakana
+2. For "kana field contains kanji" errors: Convert all kanji to hiragana/katakana following these spacing rules:
+   - ADD SPACE BEFORE particles: は、が、を、に、で、と、も、へ、から、まで、より、など
+   - DO NOT add space before verb endings: ます、ません、ました、ている、てください、たい、ない
+   - Compound verbs stay together: "よんでいます" NOT "よんで います", "もってきます" NOT "もって きます"
+   - V-て + auxiliary verbs stay together: "たべてしまいます", "よんでおきます"
+   - Separate nouns from nouns: "わたし の ともだち"
+   - Separate adjectives from nouns: "おおきい いぬ"
+   - Numbers + counters stay together: "3にん", "9じ", "9じはん"
+   - Example: "漢字を読んでいます" → "かんじ を よんでいます" (space before を, verb stays together)
+   - Example: "私の友達は本を読みます" → "わたし の ともだち は ほん を よみます"
 3. For "sentence must end with 。" errors: Add 。 to the end
 4. For "kanji field should be empty" errors: Set the Kanji field to empty string ""
 5. Ensure each card has "auto_classified_type" field with value "word", "phrase", or "sentence"
