@@ -22,7 +22,7 @@ DEBUG_MODE = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
 # Note: Generation is non-idempotent - calling with the same input may produce slightly
 # different results (different example sentences, wording variations) due to model sampling.
 # This is expected behavior; each generation is a fresh creative task.
-DEFAULT_MODEL = "claude-sonnet-4-5-20250929"
+DEFAULT_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5-20250929")
 DEFAULT_MAX_TURNS = 1
 
 # Default card type when not specified

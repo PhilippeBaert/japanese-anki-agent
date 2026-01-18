@@ -11,7 +11,8 @@ CONFIG_PATH = Path(os.getenv("CONFIG_PATH", Path(__file__).parent.parent.parent 
 _config_cache = None
 _config_cache_time = 0
 _config_lock: asyncio.Lock | None = None
-CONFIG_TTL = 300  # 5 minutes
+# Cache TTL in seconds - configurable via CONFIG_TTL environment variable
+CONFIG_TTL = int(os.getenv("CONFIG_TTL", "300"))  # Default: 5 minutes
 
 
 def _get_config_lock() -> asyncio.Lock:

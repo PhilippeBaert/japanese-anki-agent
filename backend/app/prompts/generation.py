@@ -50,11 +50,18 @@ Generate complete Anki flashcard data for each input provided below.
    - Noun phrases: "watashi no tomodachi" (my friend), "ookii neko" (big cat)
    - Key test: No predicate/verb ending, just a descriptive grouping of multiple concepts
 
-3. **sentence**: Complete sentences with a predicate
-   - Has a verb ending (です/ます/だ/plain verb forms at the end)
-   - Contains topic marker (は/が) with a complete predicate
-   - Examples: "shukudai wa kantan desu", "watashi wa nihongo wo benkyou shimasu"
-   - Key test: Could stand alone as a complete thought with a verb
+3. **sentence**: Complete sentences or utterances that stand alone
+   - Has a verb ending (です/ます/だ/plain verb forms)
+   - OR is a request form: 〜てください, 〜てくれ, 〜ないでください
+   - OR is a command/invitation: 〜ましょう, 〜なさい
+   - OR is a polite expression with ください: おねがいします, ちょっとまってください
+   - May contain topic marker (は/が) but not required for requests/commands
+   - Examples:
+     - "shukudai wa kantan desu" (statement)
+     - "kaite kudasai" (request - please write)
+     - "tabemasen ka" (invitation - won't you eat?)
+     - "ikimashō" (suggestion - let's go)
+   - Key test: Could stand alone as a complete utterance (statement, request, command, or question)
 
 **IMPORTANT: If card_type_override is provided (not null), use that classification for all purposes:
 - Use it for tags (e.g., ["phrase"])
@@ -102,14 +109,69 @@ Use spaces to separate logical units for readability. Follow these rules:
   - Correct: "たべます" NOT "たべ ます"
   - Correct: "よんでいます" NOT "よんで います"
   - Correct: "いきたい" NOT "いき たい"
+
+**Multi-Suffix Verb Forms:**
+When multiple suffixes chain together, keep the ENTIRE verb complex as one unit:
+- Negative desire: "いきたくない" NOT "いき たくない" (want to go + negative)
+- Polite negative desire: "いきたくありません" NOT "いきたく ありません"
+- Causative-passive: "たべさせられました" NOT "たべ させられました"
+- Te-form + auxiliary + suffix: "よんでおきたい" NOT "よんで おきたい"
+
+RULE: Once you attach to a verb stem, all subsequent suffixes stay attached.
+The only break point is BEFORE particles (は、が、を、etc.) or separate words.
+
+Examples:
+- "ほん を よみたくありません。" (don't want to read the book)
+- "せんせい に たべさせられました。" (was made to eat by teacher)
+
 - Numbers + counters: stay together
   - Correct: "3にん" NOT "3 にん"
   - Correct: "9じ" NOT "9 じ"
-- Compound verbs and auxiliary constructions: keep the verb complex together
-  - V-て + motion verbs: "もってきます" NOT "もって きます"
-  - V-て + auxiliary verbs: "たべてしまいます", "よんでおきます", "みておきます"
-  - V-stem + suffix verbs: "たべはじめます", "よみおわります"
-  - Chained verbs: keep entire chain together (e.g., "いってかえってきます")
+
+**Number Format Rules:**
+
+1. **Special readings** (MUST use these):
+   - 一日 → "ついたち" (1st of month) or "いちにち" (one day) - context dependent
+   - 二十歳 → "はたち" (NOT にじゅっさい)
+   - 一人 → "ひとり" (NOT いちにん)
+   - 二人 → "ふたり" (NOT ににん)
+   - 二十日 → "はつか" (20th of month)
+   - 七日 → "なのか" (7th of month)
+
+2. **In kana-only fields:**
+   - Hiragana preferred: "さんにん", "くじ", "にじゅっさい"
+   - Arabic numerals acceptable for clarity: "3にん", "9じ"
+   - Keep number+counter as one unit (no space): "さんにん" or "3にん"
+   - Time with half: "くじはん" or "9じはん" (no space)
+
+3. **Consistency within a card:**
+   - Pick one format (hiragana or Arabic) and use it consistently within the same card
+
+**Compound Verbs and Auxiliaries (keep together):**
+1. **V-て + auxiliary verbs** (grammatical function): always one unit
+   - てしまう (completion): "たべてしまいます"
+   - ておく (preparation): "よんでおきます"
+   - ている (continuous): "みています"
+   - てある (resultant state): "かいてあります"
+   - てみる (trying): "たべてみます"
+   - てあげる/もらう/くれる (giving/receiving): "おしえてあげます"
+
+2. **V-て + motion verbs** (directional): always one unit
+   - てくる (coming): "もってきます"
+   - ていく (going): "もっていきます"
+
+3. **V-stem + suffix verbs** (compound verbs): always one unit
+   - はじめる (begin): "たべはじめます"
+   - おわる (finish): "よみおわります"
+   - すぎる (excess): "たべすぎます"
+   - やすい/にくい (ease/difficulty): "よみやすい", "わかりにくい"
+
+4. **Sequential actions** (multiple distinct events): SEPARATE with spaces
+   - "たべて ねます" (eat and then sleep) - two distinct actions
+
+   EXCEPTION: If the combination is idiomatic (single concept), keep together:
+   - "いってきます" (I'm leaving and coming back - greeting)
+   - "いってかえってくる" (go and return - single round trip concept)
 
 **SEPARATE WITH SPACE:**
 - Nouns from other nouns: "わたし の ともだち"
@@ -124,13 +186,36 @@ Use spaces to separate logical units for readability. Follow these rules:
 - "ほん を よんでいます。" (I am reading a book)
 
 **FOR PHRASE-TYPE CARDS - MAIN KANA FIELD:**
-- The spacing rules above ALSO apply to the main "Hiragana/Katakana" field for phrase-type cards
-- Separate distinct words/components with spaces, even without particles
-- Examples:
-  - "akemashite omedetou" → "あけまして おめでとう" (NOT "あけましておめでとう")
-  - "ohayou gozaimasu" → "おはよう ございます"
-  - "yoroshiku onegaishimasu" → "よろしく おねがいします"
-- This makes phrases readable and shows word boundaries clearly
+
+1. **Set greetings with ございます** - space before ございます:
+   - "おはよう ございます" (good morning)
+   - "ありがとう ございます" (thank you)
+   - "おめでとう ございます" (congratulations)
+
+2. **Fossilized greetings** - keep as single unit (no spaces):
+   - "いただきます" (before eating)
+   - "ごちそうさまでした" (after eating)
+   - "いってきます" (leaving home)
+   - "いってらっしゃい" (seeing someone off)
+   - "ただいま" (I'm home)
+   - "おかえりなさい" (welcome back)
+   - "おつかれさまです" (good work)
+   - "おやすみなさい" (good night)
+   - "すみません" (sorry/excuse me)
+
+3. **Greetings with でした/です suffix** - space before the copula:
+   - "すみません でした" (I was sorry)
+   - "ごめんなさい" (single unit - sorry)
+
+4. **Descriptive phrases** - space between distinct concepts:
+   - "あかい りんご" (red apple)
+   - "わたし の ともだち" (my friend)
+   - "とても おいしい" (very delicious)
+
+5. **Decision test for phrases:**
+   - Is this a fossilized/set greeting? → Keep as one unit
+   - Does it end with ございます? → Space before ございます
+   - Otherwise, separate distinct words with spaces
 
 ### E) Kanji Fields
 - "Kanji" field:
@@ -203,6 +288,36 @@ When the input is a VERB (single word), handle the form as follows:
   - Dutch: "etend (te-vorm)"
 - **Other forms**: follow the same pattern - translate appropriately and add form name in brackets
 
+### H.1) Keigo (敬語) Handling
+
+**Preserve keigo forms - do NOT convert to plain polite:**
+
+1. **Honorific verbs** (尊敬語 - sonkeigo) - used for actions of respected people:
+   - いらっしゃる → "いらっしゃいます" (NOT います) - to be, to go, to come
+   - おっしゃる → "おっしゃいます" (NOT いいます) - to say
+   - ご覧になる → "ご覧になります" (NOT みます) - to see
+   - 召し上がる → "召し上がります" (NOT たべます) - to eat, to drink
+   - なさる → "なさいます" (NOT します) - to do
+
+2. **Humble verbs** (謙譲語 - kenjougo) - used for speaker's own actions:
+   - いたす → "いたします" (NOT します) - to do
+   - 申す → "もうします" (NOT いいます) - to say
+   - 参る → "まいります" (NOT いきます) - to go, to come
+   - おる → "おります" (NOT います) - to be
+   - いただく → "いただきます" (NOT もらいます) - to receive
+
+3. **Respectful prefixes** (お/ご):
+   - Preserve when present in input: おみず, ごかぞく, おなまえ
+   - Do NOT add if not in input
+
+**In translations and extra notes for keigo words:**
+- English: mark with "(honorific)" or "(humble)"
+- Dutch: mark with "(eerbiedig)" or "(nederig)"
+- Extra notes MUST explain: the keigo type, plain equivalent, and usage context
+- Example for いらっしゃいます:
+  - English: "to be, to go, to come (honorific polite)"
+  - Extra notes: "Honorific form of いる/いく/くる. Used when speaking about someone of higher status."
+
 ### I) Example Sentence Translation
 - "Example sentence translation" must be in ENGLISH
 
@@ -228,8 +343,12 @@ When the input is a VERB (single word), handle the form as follows:
     - Example for かっこいい: "い-adjective (irregular). Conjugates with よ- stem: かっこよくない, かっこよかった."
   - For other word types (nouns, adverbs, etc.): MAY add extra notes if helpful
 - For PHRASE-type cards: You MAY add extra notes if helpful (e.g., literal translations, usage notes)
-- If user provided extra notes, rewrite them into clear, concise English
-- Fix any typos or spelling errors
+- **If user provided extra notes**: Use them as a STARTING POINT, not the complete content:
+  - Translate to English if in another language
+  - Fix any typos or spelling errors
+  - STILL apply all rules above (verb type, adjective type, grammar explanations, etc.)
+  - Extend with additional helpful information as needed
+  - You may modify or correct the user's notes if they are inaccurate or incomplete
 - Ensure proper formatting:
   - Each sentence starts with a capital letter
   - Each sentence ends with a period
@@ -238,11 +357,76 @@ When the input is a VERB (single word), handle the form as follows:
   - Example: "Literally: \\"As for pencils, I have one.\\"\\n\\"Hitotsu no enpitsu ga arimasu\\" can also be used."
 - Keep notes helpful but concise
 
+### J.1) Adverbial Adjective Forms
+
+If the input is an ADVERBIAL form of an adjective, handle as follows:
+
+1. **い-adjective adverbs** (く-form):
+   - おおきく → "greatly, largely" (NOT "big")
+   - はやく → "quickly, fast" (NOT "fast, early")
+   - たかく → "highly, expensively" (NOT "high, expensive")
+   - Extra notes: "Adverbial form of 大きい (big). Used to modify verbs: 大きくなる (become big)."
+
+2. **な-adjective adverbs** (に-form):
+   - しずかに → "quietly" (NOT "quiet")
+   - きれいに → "beautifully, cleanly" (NOT "beautiful, clean")
+   - かんたんに → "easily, simply" (NOT "easy, simple")
+   - Extra notes: "Adverbial form of 静か (quiet). Used to modify verbs: 静かに話す (speak quietly)."
+
+Translation MUST reflect adverbial meaning (use English -ly form or equivalent).
+
+### J.2) Emotive な-adjectives (すき, きらい, じょうず, へた)
+
+These adjectives express feelings/abilities ABOUT something and have special grammar.
+
+1. **Translation options:**
+   - Verb-like style acceptable for natural English: "to like", "to dislike"
+   - Adjective style also acceptable: "fond of", "good at"
+
+2. **Critical grammar note in Extra notes:**
+   - MUST explain that the object takes が (not を)
+   - Example for すき:
+     - English: "to like, to be fond of"
+     - Dutch: "houden van, leuk vinden"
+     - Extra notes: "な-adjective expressing liking. The liked object takes が: りんご が すきです (I like apples). Modifying form: すきな (e.g., すきな たべもの - favorite food)."
+
+3. **Related adjectives requiring same treatment:**
+   - すき (like) - が marks liked thing
+   - きらい (dislike) - が marks disliked thing
+   - じょうず (skillful at) - が marks skill area
+   - へた (bad at) - が marks skill area
+   - ほしい (want) - が marks wanted thing (note: this is an い-adjective)
+
 ### K) Sound Fields
 - Leave the "Sound" field empty (word/phrase audio added manually)
 - Leave the "Sound example" field empty (sentence audio added manually)
 - Design note: Sound fields are always empty for new cards. Audio is added manually
   after import. For migration, existing sounds are preserved from old cards.
+
+### L) Cross-Card Consistency (For Batch Generation)
+
+When generating multiple cards in a single request, maintain consistency:
+
+1. **Terminology (always use these exact terms):**
+   - "polite form" (not "masu form", "formal form", or "desu/masu form")
+   - "plain form" (not "dictionary form", "casual form", or "informal form")
+   - "te-form" (not "te form", "-te form", or "conjunctive form")
+   - "negative form" (not "negative", "nai form")
+   - い-adjective (not "i-adjective", "adjective-i")
+   - な-adjective (not "na-adjective", "adjective-na")
+
+2. **Translation consistency:**
+   - Use the same English/Dutch translation for the same Japanese word across all cards in the batch
+   - If おいしい appears in multiple cards, always translate it the same way
+
+3. **Particle consistency:**
+   - Default to に for direction/destination (not へ) unless へ is specifically in the input
+   - Be consistent with particle choices across similar sentences in the batch
+
+4. **Dutch annotation format:**
+   - Always "(beleefde vorm)" for polite form (not "(beleefd)" or "(formeel)")
+   - Always "(gebiedende wijs)" for imperative
+   - Always "(て-vorm)" for te-form
 
 ## Input Cards to Process:
 
@@ -295,21 +479,49 @@ def build_repair_prompt(original_cards: list[dict], errors: list[str]) -> str:
 {cards_json}
 
 ## Repair Instructions:
-1. Fix each error while preserving correct data
-2. For "kana field contains kanji" errors: Convert all kanji to hiragana/katakana following these spacing rules:
+
+**ESSENTIAL RULES (Apply to ALL repairs):**
+
+1. **Spacing Rules:**
    - ADD SPACE BEFORE particles: は、が、を、に、で、と、も、へ、から、まで、より、など
    - DO NOT add space before verb endings: ます、ません、ました、ている、てください、たい、ない
-   - Compound verbs stay together: "よんでいます" NOT "よんで います", "もってきます" NOT "もって きます"
-   - V-て + auxiliary verbs stay together: "たべてしまいます", "よんでおきます"
+   - Multi-suffix verbs stay together: "いきたくない", "たべさせられました", "よんでおきたい"
+   - Compound verbs stay together: "よんでいます", "もってきます", "たべてしまいます"
+   - V-て + auxiliary verbs stay together: "たべてしまいます", "よんでおきます", "みています"
+   - Sequential actions get spaces: "たべて ねます" (eat then sleep)
+   - Numbers + counters stay together: "3にん", "9じ", "9じはん", "さんにん"
    - Separate nouns from nouns: "わたし の ともだち"
    - Separate adjectives from nouns: "おおきい いぬ"
-   - Numbers + counters stay together: "3にん", "9じ", "9じはん"
-   - Example: "漢字を読んでいます" → "かんじ を よんでいます" (space before を, verb stays together)
-   - Example: "私の友達は本を読みます" → "わたし の ともだち は ほん を よみます"
-3. For "sentence must end with 。" errors: Add 。 to the end
-4. For "kanji field should be empty" errors: Set the Kanji field to empty string ""
-5. Ensure each card has "auto_classified_type" field with value "word", "phrase", or "sentence"
-6. Keep all other fields unchanged
+
+2. **Verb Form Annotations (use these exact terms):**
+   - "polite form" (NOT "masu form")
+   - "plain form" (NOT "dictionary form")
+   - "te-form" (NOT "te form" or "-te form")
+   - "negative form", "past form", "conditional form", etc.
+   - BOTH English AND Dutch translations need verb form annotations for conjugated verbs
+
+3. **Translation Rules:**
+   - Use COMMAS to separate multiple translations: "to eat, to consume"
+   - NEVER use slashes: NOT "to eat/consume"
+   - Dutch verbs need "(beleefde vorm)" annotation for polite forms
+
+4. **Punctuation:**
+   - All Japanese sentences MUST end with 。(Japanese period)
+   - NOT . (Western period)
+
+5. **Fossilized Greetings (keep as single unit):**
+   - いただきます, ごちそうさまでした, いってきます, いってらっしゃい
+   - おかえりなさい, おつかれさまです, すみません, おやすみなさい
+
+6. **Greetings with ございます (space before ございます):**
+   - おはよう ございます, ありがとう ございます, おめでとう ございます
+
+**SPECIFIC ERROR FIXES:**
+1. For "kana field contains kanji" errors: Convert all kanji to hiragana/katakana following the spacing rules above
+2. For "sentence must end with 。" errors: Add 。 to the end
+3. For "kanji field should be empty" errors: Set the Kanji field to empty string ""
+4. Ensure each card has "auto_classified_type" field with value "word", "phrase", or "sentence"
+5. Keep all other fields unchanged unless they violate the rules above
 
 Respond with ONLY the corrected JSON in the same format:
 {{

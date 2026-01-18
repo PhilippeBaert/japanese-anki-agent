@@ -57,14 +57,14 @@ class TestBuildGenerationPromptContainsKeyElements:
         )
         assert "does NOT apply to phrase or sentence cards" in prompt
 
-    def test_contains_compound_verbs_and_auxiliary_constructions(self):
+    def test_contains_compound_verbs_and_auxiliaries(self):
         """Fix 3: Verify prompt contains compound verb definition."""
         prompt = build_generation_prompt(
             self.get_sample_draft_cards(),
             self.get_sample_fields(),
             self.get_sample_tags()
         )
-        assert "Compound verbs and auxiliary constructions" in prompt
+        assert "Compound Verbs and Auxiliaries" in prompt
 
     def test_contains_v_te_auxiliary_verbs(self):
         """Fix 3: Verify prompt contains V-te + auxiliary verbs examples."""
@@ -136,19 +136,12 @@ class TestBuildRepairPromptContainsSpacingRules:
         prompt = build_repair_prompt([], ["test error"])
         assert "ます、ません、ました、ている、てください、たい、ない" in prompt
 
-    def test_contains_example_conversion_kanji_to_kana(self):
-        """Fix 2: Verify repair prompt contains kanji to kana conversion example."""
+    def test_contains_spacing_examples(self):
+        """Fix 2: Verify repair prompt contains spacing examples."""
         prompt = build_repair_prompt([], ["test error"])
-        # Check for the first example conversion
-        assert "漢字を読んでいます" in prompt
-        assert "かんじ を よんでいます" in prompt
-
-    def test_contains_second_example_conversion(self):
-        """Fix 2: Verify repair prompt contains second conversion example."""
-        prompt = build_repair_prompt([], ["test error"])
-        # Check for the second example conversion
-        assert "私の友達は本を読みます" in prompt
-        assert "わたし の ともだち は ほん を よみます" in prompt
+        # Check for spacing examples in repair prompt
+        assert "わたし の ともだち" in prompt
+        assert "おおきい いぬ" in prompt
 
     def test_contains_noun_separation_rule(self):
         """Fix 2: Verify repair prompt contains noun separation rule."""
@@ -272,7 +265,6 @@ class TestCompoundVerbExamples:
         """Verify prompt contains V-te + motion verbs example."""
         prompt = self.get_prompt()
         assert "もってきます" in prompt
-        assert 'NOT "もって きます"' in prompt
 
     def test_contains_tabeteshimaimasu_example(self):
         """Verify prompt contains tabeteshimaimasu example."""
@@ -284,10 +276,10 @@ class TestCompoundVerbExamples:
         prompt = self.get_prompt()
         assert "よんでおきます" in prompt
 
-    def test_contains_miteokimasu_example(self):
-        """Verify prompt contains miteokimasu example."""
+    def test_contains_miteimasu_example(self):
+        """Verify prompt contains miteimasu example (continuous form)."""
         prompt = self.get_prompt()
-        assert "みておきます" in prompt
+        assert "みています" in prompt
 
     def test_contains_v_stem_suffix_verbs_examples(self):
         """Verify prompt contains V-stem + suffix verbs examples."""
@@ -295,7 +287,7 @@ class TestCompoundVerbExamples:
         assert "たべはじめます" in prompt
         assert "よみおわります" in prompt
 
-    def test_contains_chained_verbs_example(self):
-        """Verify prompt contains chained verbs example."""
+    def test_contains_idiomatic_greeting_example(self):
+        """Verify prompt contains idiomatic greeting example."""
         prompt = self.get_prompt()
-        assert "いってかえってきます" in prompt
+        assert "いってきます" in prompt

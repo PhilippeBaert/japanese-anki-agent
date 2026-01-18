@@ -1,9 +1,14 @@
 """AnkiConnect API client for interacting with Anki desktop."""
 
 import asyncio
+import os
 import httpx
 from typing import Any, Optional
 from pydantic import BaseModel
+
+# Default timeout for AnkiConnect requests (in seconds)
+# Configurable via ANKI_CONNECT_TIMEOUT environment variable
+DEFAULT_TIMEOUT = float(os.getenv("ANKI_CONNECT_TIMEOUT", "30.0"))
 
 
 class AnkiConnectError(Exception):
@@ -35,9 +40,9 @@ class AnkiConnectClient:
     This client maintains a persistent httpx.AsyncClient for connection pooling.
     """
 
-    def __init__(self, host: str = "localhost", port: int = 8765):
+    def __init__(self, host: str = "localhost", port: int = 8765, timeout: float | None = None):
         self.url = f"http://{host}:{port}"
-        self.timeout = 30.0
+        self.timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
         self._http_client: Optional[httpx.AsyncClient] = None
 
     async def _get_http_client(self) -> httpx.AsyncClient:

@@ -9,20 +9,29 @@ logger = logging.getLogger(__name__)
 
 # API Key authentication configuration
 API_KEY = os.getenv("API_KEY")
-REQUIRE_AUTH = os.getenv("REQUIRE_AUTH", "true").lower() in ("true", "1", "yes")
+
+# Smart default: if API_KEY is set, require auth by default (production mode)
+# If API_KEY is not set, don't require auth by default (development mode)
+_require_auth_env = os.getenv("REQUIRE_AUTH")
+if _require_auth_env is not None:
+    # Explicit setting takes precedence
+    REQUIRE_AUTH = _require_auth_env.lower() in ("true", "1", "yes")
+else:
+    # Smart default based on whether API_KEY is configured
+    REQUIRE_AUTH = API_KEY is not None
 
 
 def _validate_auth_config() -> None:
     """Validate authentication configuration at startup."""
     if REQUIRE_AUTH and not API_KEY:
         raise RuntimeError(
-            "SECURITY ERROR: API_KEY environment variable is not set but REQUIRE_AUTH=True. "
+            "SECURITY ERROR: REQUIRE_AUTH=True but API_KEY environment variable is not set. "
             "Set API_KEY for production or set REQUIRE_AUTH=False for development mode."
         )
     if not REQUIRE_AUTH:
         logger.warning(
-            "WARNING: Authentication is DISABLED (REQUIRE_AUTH=False). "
-            "This should only be used in development environments!"
+            "Authentication DISABLED (development mode). "
+            "Set API_KEY environment variable to enable authentication for production."
         )
 
 

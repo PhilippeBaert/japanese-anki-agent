@@ -1,6 +1,7 @@
 """Migration endpoints for migrating old Anki notes to the new format."""
 
 import logging
+import os
 import re
 from typing import Optional
 
@@ -23,13 +24,57 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/migrate", tags=["migrate"])
 
-# Note type names - could be made configurable
-OLD_NOTE_TYPE = "Philippe's Japanese v3"
-NEW_NOTE_TYPE = "Japanese Vocabulary (Agent)"
+# Note type names - configurable via environment variables
+# These define the old format (to migrate from) and new format (to migrate to)
+OLD_NOTE_TYPE = os.getenv("MIGRATE_OLD_NOTE_TYPE", "Philippe's Japanese v3")
+NEW_NOTE_TYPE = os.getenv("MIGRATE_NEW_NOTE_TYPE", "Japanese Vocabulary (Agent)")
 
 # Regex pattern for validating deck names - allows alphanumeric, spaces, and basic punctuation
 # This prevents injection of Anki query operators and special characters
 DECK_NAME_PATTERN = r"^[\w\s\-_.,'():/]+$"
+
+
+def _load_field_mapping() -> dict[str, str]:
+    """Load field mapping from environment variable or use default.
+
+    The MIGRATE_FIELD_MAPPING env var should be a JSON object mapping old field names
+    to new field names. If not set, returns the default mapping for migrating from
+    "Philippe's Japanese v3" to "Japanese Vocabulary (Agent)" note types.
+    """
+    import json
+
+    env_mapping = os.getenv("MIGRATE_FIELD_MAPPING")
+    if env_mapping:
+        try:
+            mapping = json.loads(env_mapping)
+            if not isinstance(mapping, dict):
+                logger.warning("MIGRATE_FIELD_MAPPING must be a JSON object, using default")
+            else:
+                return mapping
+        except json.JSONDecodeError as e:
+            logger.warning(f"Invalid JSON in MIGRATE_FIELD_MAPPING: {e}, using default")
+
+    # Default mapping from old to new format
+    # Design note: "Nederlands" -> "Dutch" - the old format used Dutch language naming ("Nederlands"),
+    # while the new format uses English ("Dutch") for consistency with other field names.
+    # "Sound Example" -> "Sound example" - standardized casing (capital S, lowercase e).
+    return {
+        "Kana": "Hiragana/Katakana",
+        "Romaji": "Romaji",
+        "Kanji": "Kanji",
+        "English": "English",
+        "Nederlands": "Dutch",
+        "Example": "Example sentence hiragana/katakana",
+        "Example Kanji": "Example sentence kanji",
+        "Example translation": "Example sentence translation",
+        "Extra": "Extra notes",
+        "Sound": "Sound",
+        "Sound Example": "Sound example",
+    }
+
+
+# Field mapping from old to new format - loaded at module initialization
+FIELD_MAPPING = _load_field_mapping()
 
 
 def escape_anki_query_value(value: str) -> str:
@@ -48,24 +93,6 @@ def escape_anki_query_value(value: str) -> str:
     escaped = value.replace("\\", "\\\\")
     escaped = escaped.replace('"', '\\"')
     return escaped
-
-# Field mapping from old to new format
-# Design note: "Nederlands" → "Dutch" - the old format used Dutch language naming ("Nederlands"),
-# while the new format uses English ("Dutch") for consistency with other field names.
-# "Sound Example" → "Sound example" - standardized casing (capital S, lowercase e).
-FIELD_MAPPING = {
-    "Kana": "Hiragana/Katakana",
-    "Romaji": "Romaji",
-    "Kanji": "Kanji",
-    "English": "English",
-    "Nederlands": "Dutch",
-    "Example": "Example sentence hiragana/katakana",
-    "Example Kanji": "Example sentence kanji",
-    "Example translation": "Example sentence translation",
-    "Extra": "Extra notes",
-    "Sound": "Sound",
-    "Sound Example": "Sound example",
-}
 
 
 # Response models
