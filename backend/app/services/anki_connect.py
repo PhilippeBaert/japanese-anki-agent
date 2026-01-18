@@ -1,5 +1,6 @@
 """AnkiConnect API client for interacting with Anki desktop."""
 
+import asyncio
 import httpx
 from typing import Any, Optional
 from pydantic import BaseModel
@@ -231,13 +232,27 @@ class AnkiConnectClient:
         return deck_infos
 
 
-# Singleton instance for reuse
+# Singleton instance for reuse with thread-safe initialization
 _client: Optional[AnkiConnectClient] = None
+_client_lock: asyncio.Lock | None = None
 
 
-def get_anki_client() -> AnkiConnectClient:
-    """Get the AnkiConnect client singleton."""
+def _get_client_lock() -> asyncio.Lock:
+    """Get or create the client lock (lazy initialization for the lock itself)."""
+    global _client_lock
+    if _client_lock is None:
+        _client_lock = asyncio.Lock()
+    return _client_lock
+
+
+async def get_anki_client() -> AnkiConnectClient:
+    """Get the AnkiConnect client singleton (thread-safe)."""
     global _client
-    if _client is None:
-        _client = AnkiConnectClient()
-    return _client
+    if _client is not None:
+        return _client
+
+    async with _get_client_lock():
+        # Double-check after acquiring lock
+        if _client is None:
+            _client = AnkiConnectClient()
+        return _client

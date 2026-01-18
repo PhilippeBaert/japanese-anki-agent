@@ -24,7 +24,7 @@ async def generate_cards(request: GenerateRequest) -> GenerateResponse:
     Returns:
         GenerateResponse with generated cards and filename
     """
-    config = load_config()
+    config = await load_config()
 
     try:
         # Generate cards using Claude Agent
@@ -64,7 +64,7 @@ async def regenerate_card(request: RegenerateCardRequest) -> GeneratedCard:
     Returns:
         A single regenerated GeneratedCard
     """
-    config = load_config()
+    config = await load_config()
 
     # Create a draft card with the type override
     draft_card = DraftCard(

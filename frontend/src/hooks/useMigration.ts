@@ -88,6 +88,12 @@ export function useMigration(): UseMigrationReturn {
   const isGeneratingRef = useRef(false);
   const abortGenerationRef = useRef(false);
 
+  // Keep a stable reference to current notes for async operations
+  const notesRef = useRef<MigrationNoteState[]>(notes);
+  useEffect(() => {
+    notesRef.current = notes;
+  }, [notes]);
+
   // Check Anki connection
   const checkConnection = useCallback(async () => {
     setIsCheckingConnection(true);
@@ -205,9 +211,10 @@ export function useMigration(): UseMigrationReturn {
           return newNotes;
         });
 
-        // Build batch request items
+        // Build batch request items - use ref to get current state
+        const currentNotes = notesRef.current;
         const batchItems: BatchPreviewItem[] = batchIndices.map(idx => {
-          const noteState = notes[idx];
+          const noteState = currentNotes[idx];
           return {
             noteId: noteState.note.note_id,
             rawInput: noteState.note.old_fields['Kana'] || '',
@@ -278,11 +285,12 @@ export function useMigration(): UseMigrationReturn {
     };
 
     generateAllPreviews();
-  }, [notes.length]); // Only trigger when notes array length changes
+  }, [notes.filter(n => n.status === 'pending' && n.preview === null).length]); // Trigger when pending notes needing preview changes
 
   // Regenerate preview for a specific note
   const regeneratePreview = useCallback(async (noteIndex: number) => {
-    const noteState = notes[noteIndex];
+    // Use ref to get current state to avoid stale closure
+    const noteState = notesRef.current[noteIndex];
     if (!noteState) return;
 
     // Mark as previewing
@@ -307,7 +315,7 @@ export function useMigration(): UseMigrationReturn {
       }
       return newNotes;
     });
-  }, [notes, generateSinglePreview]);
+  }, [generateSinglePreview]);
 
   // Update a field in the preview
   const updatePreviewField = useCallback((noteIndex: number, field: string, value: string) => {
@@ -360,7 +368,8 @@ export function useMigration(): UseMigrationReturn {
 
   // Approve a note (commit to Anki)
   const approveNote = useCallback(async (noteIndex: number) => {
-    const noteState = notes[noteIndex];
+    // Use ref to get current state to avoid stale closure
+    const noteState = notesRef.current[noteIndex];
     if (!noteState || !noteState.preview || noteState.status === 'approving') return;
 
     setNotes(prev => {
@@ -382,8 +391,9 @@ export function useMigration(): UseMigrationReturn {
         return newNotes;
       });
 
-      // Move to next non-approved/non-skipped note
-      const nextIndex = notes.findIndex(
+      // Move to next non-approved/non-skipped note - use ref for current state
+      const currentNotes = notesRef.current;
+      const nextIndex = currentNotes.findIndex(
         (n, i) => i > noteIndex && n.status !== 'approved' && n.status !== 'skipped'
       );
       if (nextIndex !== -1) {
@@ -400,7 +410,7 @@ export function useMigration(): UseMigrationReturn {
         return newNotes;
       });
     }
-  }, [notes, source]);
+  }, [source]);
 
   // Skip a note
   const skipNote = useCallback((noteIndex: number) => {
@@ -410,14 +420,15 @@ export function useMigration(): UseMigrationReturn {
       return newNotes;
     });
 
-    // Move to next non-approved/non-skipped note
-    const nextIndex = notes.findIndex(
+    // Move to next non-approved/non-skipped note - use ref for current state
+    const currentNotes = notesRef.current;
+    const nextIndex = currentNotes.findIndex(
       (n, i) => i > noteIndex && n.status !== 'approved' && n.status !== 'skipped'
     );
     if (nextIndex !== -1) {
       setCurrentNoteIndex(nextIndex);
     }
-  }, [notes]);
+  }, []);
 
   // Check connection on mount
   useEffect(() => {

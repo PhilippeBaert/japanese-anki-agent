@@ -24,7 +24,7 @@ async def export_csv(request: ExportRequest) -> StreamingResponse:
     Returns:
         CSV file download response
     """
-    config = load_config()
+    config = await load_config()
 
     if not request.cards:
         raise HTTPException(status_code=400, detail="No cards to export")
@@ -62,7 +62,7 @@ async def export_csv_with_priority(request: ExportWithPriorityRequest) -> Stream
         - Single CSV if only one category has cards
         - ZIP file with both CSVs if both categories have cards
     """
-    config = load_config()
+    config = await load_config()
 
     has_core = len(request.core_cards) > 0
     has_extra = len(request.extra_cards) > 0

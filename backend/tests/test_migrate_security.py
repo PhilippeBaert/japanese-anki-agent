@@ -143,11 +143,10 @@ class TestEndpointDeckNameValidation:
         # Mock the auth to allow requests through
         with patch("app.auth.verify_api_key", return_value="test_key"):
             # Mock the Anki client to avoid actual Anki connection
-            with patch("app.routes.migrate.get_anki_client") as mock_client:
-                mock_anki = AsyncMock()
-                mock_anki.find_notes.return_value = []
-                mock_client.return_value = mock_anki
-
+            # get_anki_client is now async, so we need AsyncMock for it too
+            mock_anki = AsyncMock()
+            mock_anki.find_notes.return_value = []
+            with patch("app.routes.migrate.get_anki_client", new_callable=AsyncMock, return_value=mock_anki):
                 response = client.get(
                     "/api/migrate/notes",
                     params={"deck": "Japanese Vocabulary"},

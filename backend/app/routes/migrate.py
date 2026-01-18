@@ -166,7 +166,7 @@ async def check_anki_connection() -> ConnectionResponse:
     Returns:
         ConnectionResponse indicating if Anki is connected
     """
-    client = get_anki_client()
+    client = await get_anki_client()
     try:
         await client.check_connection()
         return ConnectionResponse(connected=True, message="Connected to AnkiConnect")
@@ -181,7 +181,7 @@ async def get_migration_decks() -> DecksResponse:
     Returns:
         DecksResponse with list of decks and their note counts
     """
-    client = get_anki_client()
+    client = await get_anki_client()
 
     try:
         decks = await client.get_decks_with_note_type(OLD_NOTE_TYPE)
@@ -212,7 +212,7 @@ async def get_notes_for_migration(
     Returns:
         NotesResponse with list of notes and their old field values
     """
-    client = get_anki_client()
+    client = await get_anki_client()
 
     try:
         # Find notes with old note type in this deck
@@ -264,7 +264,7 @@ async def generate_migration_preview(request: PreviewRequest) -> PreviewResponse
     Returns:
         PreviewResponse with the new field values
     """
-    config = load_config()
+    config = await load_config()
 
     # Create a draft card for the agent
     # Note: We don't pass old translations - the agent generates fresh ones from kana input.
@@ -325,7 +325,7 @@ async def generate_batch_migration_preview(request: BatchPreviewRequest) -> Batc
     Returns:
         BatchPreviewResponse with results for each item
     """
-    config = load_config()
+    config = await load_config()
 
     # Build draft cards for all items
     draft_cards = []
@@ -420,7 +420,7 @@ async def approve_migration(request: ApproveRequest) -> ApproveResponse:
     Returns:
         ApproveResponse indicating success
     """
-    client = get_anki_client()
+    client = await get_anki_client()
 
     try:
         # Change the note model (note type) and update all fields in one operation
