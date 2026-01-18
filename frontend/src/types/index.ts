@@ -6,6 +6,7 @@ export interface Source {
 }
 
 export interface DraftCard {
+  /** Client-side generated unique identifier (via crypto.randomUUID()). Not sent to or received from the backend. */
   id: string;
   rawInput: string;
   fixedEnglish: string;
@@ -49,6 +50,13 @@ export interface GenerateResponse {
 
 export interface ExportRequest {
   cards: GeneratedCard[];
+  filename: string;
+  source?: string;
+}
+
+export interface ExportWithPriorityRequest {
+  core_cards: GeneratedCard[];
+  extra_cards: GeneratedCard[];
   filename: string;
   source?: string;
 }

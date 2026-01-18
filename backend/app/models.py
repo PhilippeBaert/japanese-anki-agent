@@ -54,13 +54,19 @@ class ExportRequest(BaseModel):
 
 
 class AnkiConfig(BaseModel):
-    """Configuration for Anki card generation"""
+    """Configuration for Anki card generation.
+
+    Uses snake_case internally (Python convention) but camelCase for JSON serialization
+    (matching the config file format and frontend expectations).
+    """
+    model_config = {"populate_by_name": True, "serialize_by_alias": True}
+
     fields: list[str] = Field(default_factory=list, max_length=50)
     tags: list[str] = Field(default_factory=list, max_length=50)
-    tagsColumnEnabled: bool = True
-    tagsColumnName: str = Field(default="Tags", max_length=100)
+    tags_column_enabled: bool = Field(default=True, alias="tagsColumnEnabled")
+    tags_column_name: str = Field(default="Tags", max_length=100, alias="tagsColumnName")
     sources: list[Source] = Field(default_factory=list, max_length=20)
-    defaultSource: Optional[str] = Field(None, max_length=50)
+    default_source: Optional[str] = Field(None, max_length=50, alias="defaultSource")
 
 
 class RegenerateCardRequest(BaseModel):

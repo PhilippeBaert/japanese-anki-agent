@@ -8,6 +8,14 @@ HIRAGANA_PATTERN = re.compile(r'[\u3040-\u309f]')
 KATAKANA_PATTERN = re.compile(r'[\u30a0-\u30ff]')
 KANJI_PATTERN = re.compile(r'[\u4e00-\u9faf\u3400-\u4dbf]')
 
+# Configuration: Fields that should contain only kana (no kanji)
+# These field names must match the field names in the Anki note type configuration
+KANA_ONLY_FIELDS = ['Hiragana/Katakana', 'Example sentence hiragana/katakana']
+
+# Configuration: Fields that must have actual content (not empty or whitespace)
+# These are the core identification fields that every card must have populated
+REQUIRED_NON_EMPTY_FIELDS = ['Hiragana/Katakana', 'English', 'Dutch']
+
 # Allowed characters in kana-only fields: hiragana, katakana, punctuation, spaces, numbers
 KANA_ONLY_PATTERN = re.compile(r'^[\u3040-\u309f\u30a0-\u30ff\u3000-\u303f\s0-9０-９。、・「」（）]*$')
 
@@ -38,8 +46,7 @@ def validate_card(card: dict, fields: list[str]) -> list[str]:
     card_fields = card.get('fields', {})
 
     # Check kana-only fields for kanji
-    kana_only_fields = ['Hiragana/Katakana', 'Example sentence hiragana/katakana']
-    for field in kana_only_fields:
+    for field in KANA_ONLY_FIELDS:
         value = card_fields.get(field, '')
         if value and has_kanji(value):
             errors.append(f"Field '{field}' contains kanji but should be kana-only: '{value}'")
@@ -67,6 +74,12 @@ def validate_card(card: dict, fields: list[str]) -> list[str]:
     for field in fields:
         if field not in card_fields:
             errors.append(f"Missing required field: '{field}'")
+
+    # Check that critical fields are not empty or whitespace-only
+    for field in REQUIRED_NON_EMPTY_FIELDS:
+        value = card_fields.get(field, '')
+        if not value or not value.strip():
+            errors.append(f"Required field '{field}' is empty or contains only whitespace")
 
     # Check tags is a list
     if not isinstance(card.get('tags'), list):

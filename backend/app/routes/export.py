@@ -1,5 +1,7 @@
 """Export endpoint for downloading CSV files."""
 
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import io
@@ -9,6 +11,8 @@ from ..models import ExportRequest, ExportWithPriorityRequest
 from ..config import load_config
 from ..services.csv_export import generate_csv, generate_csv_with_priority, get_csv_filename
 from ..auth import verify_api_key
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -27,7 +31,7 @@ async def export_csv(request: ExportRequest) -> StreamingResponse:
     config = await load_config()
 
     if not request.cards:
-        raise HTTPException(status_code=400, detail="No cards to export")
+        raise HTTPException(status_code=422, detail="No cards to export")
 
     try:
         # Generate CSV content
@@ -50,7 +54,8 @@ async def export_csv(request: ExportRequest) -> StreamingResponse:
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+        logger.error(f"Export failed: {e}")
+        raise HTTPException(status_code=500, detail="Export failed")
 
 
 @router.post("/export-priority", dependencies=[Depends(verify_api_key)])
@@ -68,7 +73,7 @@ async def export_csv_with_priority(request: ExportWithPriorityRequest) -> Stream
     has_extra = len(request.extra_cards) > 0
 
     if not has_core and not has_extra:
-        raise HTTPException(status_code=400, detail="No cards to export")
+        raise HTTPException(status_code=422, detail="No cards to export")
 
     try:
         # Sanitize base filename
@@ -136,4 +141,5 @@ async def export_csv_with_priority(request: ExportWithPriorityRequest) -> Stream
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+        logger.error(f"Export failed: {e}")
+        raise HTTPException(status_code=500, detail="Export failed")

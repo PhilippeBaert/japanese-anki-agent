@@ -33,8 +33,8 @@ def generate_csv(
 
     # Determine column names for Anki directive
     columns = list(config.fields)
-    if config.tagsColumnEnabled:
-        columns.append(config.tagsColumnName)
+    if config.tags_column_enabled:
+        columns.append(config.tags_column_name)
 
     # Write Anki-specific header directives (Anki 2.1.54+)
     # #separator:Comma - explicit comma separator
@@ -44,7 +44,7 @@ def generate_csv(
     output.write("#separator:Comma\n")
     output.write("#html:false\n")
     output.write(f"#columns:{','.join(columns)}\n")
-    if config.tagsColumnEnabled:
+    if config.tags_column_enabled:
         # Tags column is the last column (1-indexed)
         tags_column_index = len(config.fields) + 1
         output.write(f"#tags column:{tags_column_index}\n")
@@ -61,7 +61,7 @@ def generate_csv(
             row.append(value)
 
         # Add tags column if enabled
-        if config.tagsColumnEnabled:
+        if config.tags_column_enabled:
             # Build tags list with source prepended if provided
             tags_list = []
             if source:
@@ -96,13 +96,13 @@ def generate_csv_with_priority(
     output = io.StringIO()
 
     columns = list(config.fields)
-    if config.tagsColumnEnabled:
-        columns.append(config.tagsColumnName)
+    if config.tags_column_enabled:
+        columns.append(config.tags_column_name)
 
     output.write("#separator:Comma\n")
     output.write("#html:false\n")
     output.write(f"#columns:{','.join(columns)}\n")
-    if config.tagsColumnEnabled:
+    if config.tags_column_enabled:
         tags_column_index = len(config.fields) + 1
         output.write(f"#tags column:{tags_column_index}\n")
 
@@ -115,7 +115,7 @@ def generate_csv_with_priority(
             value = card.fields.get(field, '')
             row.append(value)
 
-        if config.tagsColumnEnabled:
+        if config.tags_column_enabled:
             tags_list = []
             if source:
                 tags_list.append(source)

@@ -12,8 +12,8 @@ class TestGenerateCsv:
         return AnkiConfig(
             fields=["Field1", "Field2", "Field3"],
             tags=["tag1", "tag2"],
-            tagsColumnEnabled=True,
-            tagsColumnName="Tags",
+            tags_column_enabled=True,
+            tags_column_name="Tags",
         )
 
     def get_card(self) -> GeneratedCard:
@@ -47,7 +47,7 @@ class TestGenerateCsv:
 
     def test_no_tags_column_when_disabled(self):
         config = self.get_config()
-        config.tagsColumnEnabled = False
+        config.tags_column_enabled = False
         card = self.get_card()
         csv_content = generate_csv([card], config)
 
@@ -110,8 +110,8 @@ class TestGenerateCsv:
         config = AnkiConfig(
             fields=["Z_Field", "A_Field", "M_Field"],
             tags=[],
-            tagsColumnEnabled=False,
-            tagsColumnName="Tags",
+            tags_column_enabled=False,
+            tags_column_name="Tags",
         )
         card = GeneratedCard(
             fields={

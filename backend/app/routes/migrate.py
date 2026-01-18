@@ -4,7 +4,8 @@ import logging
 import re
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from ..models import DraftCard, GeneratedCard, CardType
@@ -159,7 +160,7 @@ class ConnectionResponse(BaseModel):
     message: str
 
 
-@router.get("/check-connection", response_model=ConnectionResponse)
+@router.get("/check-connection", response_model=ConnectionResponse, dependencies=[Depends(verify_api_key)])
 async def check_anki_connection() -> ConnectionResponse:
     """Check if AnkiConnect is available.
 
@@ -171,7 +172,8 @@ async def check_anki_connection() -> ConnectionResponse:
         await client.check_connection()
         return ConnectionResponse(connected=True, message="Connected to AnkiConnect")
     except AnkiConnectError as e:
-        return ConnectionResponse(connected=False, message=str(e))
+        logger.error(f"AnkiConnect check failed: {e}")
+        return ConnectionResponse(connected=False, message="Cannot connect to AnkiConnect")
 
 
 @router.get("/decks", response_model=DecksResponse, dependencies=[Depends(verify_api_key)])
@@ -190,7 +192,7 @@ async def get_migration_decks() -> DecksResponse:
         logger.error(f"AnkiConnect error getting decks: {e}")
         raise HTTPException(
             status_code=503,
-            detail=f"Cannot communicate with Anki: {e}"
+            detail="Cannot communicate with Anki"
         )
 
 
@@ -248,7 +250,7 @@ async def get_notes_for_migration(
         logger.error(f"AnkiConnect error getting notes: {e}")
         raise HTTPException(
             status_code=503,
-            detail=f"Cannot communicate with Anki: {e}"
+            detail="Cannot communicate with Anki"
         )
 
 
@@ -313,11 +315,16 @@ async def generate_migration_preview(request: PreviewRequest) -> PreviewResponse
 
 
 @router.post("/preview-batch", response_model=BatchPreviewResponse, dependencies=[Depends(verify_api_key)])
-async def generate_batch_migration_preview(request: BatchPreviewRequest) -> BatchPreviewResponse:
+async def generate_batch_migration_preview(request: BatchPreviewRequest) -> JSONResponse:
     """Generate previews for multiple notes in a single batch.
 
     This endpoint processes up to 10 notes at once, returning results for each.
     Individual item failures don't fail the entire batch - partial results are returned.
+
+    Returns:
+        - 200 if all items succeeded
+        - 207 Multi-Status if some items succeeded and some failed
+        - 500 if all items failed
 
     Args:
         request: BatchPreviewRequest containing up to 10 items
@@ -378,15 +385,16 @@ async def generate_batch_migration_preview(request: BatchPreviewRequest) -> Batc
                 auto_classified_type=generated.auto_classified_type,
             ))
 
-        return BatchPreviewResponse(
+        response = BatchPreviewResponse(
             results=results,
             successful_count=len(results),
             failed_count=0,
         )
+        return JSONResponse(content=response.model_dump(), status_code=200)
 
     except CardGenerationError as e:
         logger.error(f"Batch preview generation failed: {e}")
-        # Return all items as failed
+        # Return all items as failed with 500 status
         results = [
             BatchPreviewItemResult(
                 note_id=item.note_id,
@@ -395,11 +403,12 @@ async def generate_batch_migration_preview(request: BatchPreviewRequest) -> Batc
             )
             for item in request.items
         ]
-        return BatchPreviewResponse(
+        response = BatchPreviewResponse(
             results=results,
             successful_count=0,
             failed_count=len(results),
         )
+        return JSONResponse(content=response.model_dump(), status_code=500)
     except HTTPException:
         raise
     except Exception as e:
@@ -438,5 +447,5 @@ async def approve_migration(request: ApproveRequest) -> ApproveResponse:
         logger.error(f"AnkiConnect error approving migration: {e}")
         raise HTTPException(
             status_code=503,
-            detail=f"Failed to update note in Anki: {e}"
+            detail="Failed to update note in Anki"
         )
