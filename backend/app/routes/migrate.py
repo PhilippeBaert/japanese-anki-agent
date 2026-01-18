@@ -1,6 +1,7 @@
 """Migration endpoints for migrating old Anki notes to the new format."""
 
 import logging
+import re
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -24,6 +25,28 @@ router = APIRouter(prefix="/migrate", tags=["migrate"])
 # Note type names - could be made configurable
 OLD_NOTE_TYPE = "Philippe's Japanese v3"
 NEW_NOTE_TYPE = "Japanese Vocabulary (Agent)"
+
+# Regex pattern for validating deck names - allows alphanumeric, spaces, and basic punctuation
+# This prevents injection of Anki query operators and special characters
+DECK_NAME_PATTERN = r"^[\w\s\-_.,'():/]+$"
+
+
+def escape_anki_query_value(value: str) -> str:
+    """Escape special characters for safe use in Anki search queries.
+
+    Anki's search syntax uses quotes and backslashes as special characters.
+    This function escapes them to prevent query injection attacks.
+
+    Args:
+        value: The raw string value to escape
+
+    Returns:
+        The escaped string safe for use in quoted Anki query values
+    """
+    # First escape backslashes, then escape double quotes
+    escaped = value.replace("\\", "\\\\")
+    escaped = escaped.replace('"', '\\"')
+    return escaped
 
 # Field mapping from old to new format
 # Design note: "Nederlands" → "Dutch" - the old format used Dutch language naming ("Nederlands"),
@@ -171,7 +194,13 @@ async def get_migration_decks() -> DecksResponse:
 
 @router.get("/notes", response_model=NotesResponse, dependencies=[Depends(verify_api_key)])
 async def get_notes_for_migration(
-    deck: str = Query(..., description="Deck name to get notes from")
+    deck: str = Query(
+        ...,
+        description="Deck name to get notes from",
+        min_length=1,
+        max_length=255,
+        pattern=DECK_NAME_PATTERN,
+    )
 ) -> NotesResponse:
     """Get all notes from a deck that need migration.
 
@@ -185,7 +214,10 @@ async def get_notes_for_migration(
 
     try:
         # Find notes with old note type in this deck
-        query = f'"deck:{deck}" "note:{OLD_NOTE_TYPE}"'
+        # Escape values to prevent query injection attacks
+        escaped_deck = escape_anki_query_value(deck)
+        escaped_note_type = escape_anki_query_value(OLD_NOTE_TYPE)
+        query = f'"deck:{escaped_deck}" "note:{escaped_note_type}"'
         note_ids = await client.find_notes(query)
 
         if not note_ids:

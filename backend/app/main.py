@@ -152,6 +152,76 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 
 # =============================================================================
+# CORS Configuration
+# =============================================================================
+
+def parse_cors_origins() -> list[str]:
+    """
+    Parse CORS allowed origins from environment variable.
+
+    Supports:
+    - Comma-separated list of origins (e.g., "http://localhost:3000,https://myapp.com")
+    - Wildcard "*" for development (logs a security warning)
+    - Defaults to "http://localhost:3000" if not set
+
+    Returns:
+        List of validated origin URLs, or ["*"] for wildcard mode.
+    """
+    cors_env = os.getenv("CORS_ORIGINS", "").strip()
+
+    # Default to localhost:3000 for development
+    if not cors_env:
+        logger.info("CORS_ORIGINS not set, defaulting to http://localhost:3000")
+        return ["http://localhost:3000"]
+
+    # Handle wildcard for development
+    if cors_env == "*":
+        logger.warning(
+            "CORS_ORIGINS set to '*' - allowing all origins. "
+            "This is insecure and should only be used for development!"
+        )
+        return ["*"]
+
+    # Parse comma-separated origins
+    origins = [origin.strip() for origin in cors_env.split(",") if origin.strip()]
+
+    if not origins:
+        logger.warning("CORS_ORIGINS is empty after parsing, defaulting to http://localhost:3000")
+        return ["http://localhost:3000"]
+
+    # Validate each origin is a valid URL
+    validated_origins = []
+    for origin in origins:
+        # Basic URL validation: must start with http:// or https://
+        if not origin.startswith(("http://", "https://")):
+            logger.warning(
+                f"Invalid CORS origin '{origin}' - must start with http:// or https://. Skipping."
+            )
+            continue
+
+        # Check for common URL format issues
+        if " " in origin:
+            logger.warning(f"Invalid CORS origin '{origin}' - contains spaces. Skipping.")
+            continue
+
+        validated_origins.append(origin)
+
+    if not validated_origins:
+        logger.error(
+            "No valid CORS origins found after validation. "
+            "Defaulting to http://localhost:3000"
+        )
+        return ["http://localhost:3000"]
+
+    logger.info(f"CORS configured with allowed origins: {validated_origins}")
+    return validated_origins
+
+
+# Parse CORS origins at module load time
+CORS_ALLOWED_ORIGINS = parse_cors_origins()
+
+
+# =============================================================================
 # Application Setup
 # =============================================================================
 
@@ -161,10 +231,10 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# CORS configuration for frontend at localhost:3000
+# CORS configuration - origins loaded from CORS_ORIGINS environment variable
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "X-API-Key"],
