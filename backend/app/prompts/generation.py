@@ -268,25 +268,25 @@ Examples:
 ### H) Verb Form Translations
 When the input is a VERB (single word), handle the form as follows:
 
-**Dictionary form** (base form ending in -u: taberu, nomu, kiku, iku):
-- Translate with simple infinitive, NO form annotation
-- English: "to eat", "to drink", "to listen", "to go"
-- Dutch: "eten", "drinken", "luisteren", "gaan"
+**Plain forms** - translate naturally, NO form annotation:
+- **Plain form** (base form ending in -u: taberu, nomu, hanasu):
+  - English: "to eat", "to drink", "to speak"
+  - Dutch: "eten", "drinken", "spreken"
+- **Plain negative form** (ない form: tabenai, nomanai, hanasanai):
+  - English: "to not eat", "to not drink", "to not speak"
+  - Dutch: "niet eten", "niet drinken", "niet spreken"
+- **Plain past form** (た form: tabeta, nonda, hanashita):
+  - English: "ate", "drank", "spoke"
+  - Dutch: "at", "dronk", "sprak"
 
-**Other verb forms** - add form name in brackets after translation:
+**Non-plain forms** - add form name in brackets after translation:
 - **Polite form** (ます form: tabemasu, nomimasu):
-  - English: "eat (polite form)" or "to eat (polite form)"
-  - Dutch: "eten (beleefde vorm)"
-- **Plain negative form** (ない form: tabenai, nomanai):
-  - English: "not eat (plain negative form)"
-  - Dutch: "niet eten (gewone ontkennende vorm)"
-- **Plain past form** (た form: tabeta, nonda):
-  - English: "ate (plain past form)"
-  - Dutch: "at (gewone verleden tijd)"
-- **Te form** (て form: tabete, nonde):
-  - English: "eating (te form)" - used for requests, continuous, connecting
+  - English: "to eat (polite form)", "to drink (polite form)"
+  - Dutch: "eten (beleefde vorm)", "drinken (beleefde vorm)"
+- **Te-form** (て form: tabete, nonde):
+  - English: "eating (te-form)" - used for requests, continuous, connecting
   - Dutch: "etend (te-vorm)"
-- **Other forms**: follow the same pattern - translate appropriately and add form name in brackets
+- **Other non-plain forms**: follow the same pattern - translate appropriately and add form name in brackets
 
 ### H.1) Keigo (敬語) Handling
 
